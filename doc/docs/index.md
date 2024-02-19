@@ -24,8 +24,8 @@ The script `build.sh` will compile everything and install it as a python package
 `pip install maturin`
 
 ## Dependencies
-	+ `numpy`
-	+ `matplotlib`
-	+ `networkx`
-	+ `pandas`
-	+ `tqdm`
++ `numpy`
++ `matplotlib`
++ `networkx`
++ `pandas`
++ `tqdm`

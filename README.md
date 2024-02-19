@@ -24,11 +24,11 @@ The script `build.sh` will compile everything and install it as a python package
 `pip install maturin`
 
 # Dependencies
-	+ `numpy`
-	+ `matplotlib`
-	+ `networkx`
-	+ `pandas`
-	+ `tqdm`
++ `numpy`
++ `matplotlib`
++ `networkx`
++ `pandas`
++ `tqdm`
 
 # Documentation
 The documentation can be found in https://mroget.github.io/qwgraph/
