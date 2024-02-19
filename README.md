@@ -7,7 +7,7 @@ The quantum walk model implemented in this package follows the paper https://arx
 
 Most of the critical functions of this package are implemented and compiled in rust, providing an efficient simulation.
 
-An example notebook can be found at https://github.com/mroget/qwgraph/demo.ipynb
+An example notebook can be found at https://github.com/mroget/qwgraph/blob/main/demo.ipynb
 
 # Installation
 ## 1. From pip
