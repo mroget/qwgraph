@@ -18,7 +18,7 @@
     
     
       
-        <title>QWGraph Documentation</title>
+        <title>QWGraph Documentation v2.0</title>
       
     
     
@@ -78,7 +78,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="QWGraph Documentation" class="md-header__button md-logo" aria-label="QWGraph Documentation" data-md-component="logo">
+    <a href="." title="QWGraph Documentation v2.0" class="md-header__button md-logo" aria-label="QWGraph Documentation v2.0" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -92,7 +92,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            QWGraph Documentation
+            QWGraph Documentation v2.0
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -173,13 +173,13 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="QWGraph Documentation" class="md-nav__button md-logo" aria-label="QWGraph Documentation" data-md-component="logo">
+    <a href="." title="QWGraph Documentation v2.0" class="md-nav__button md-logo" aria-label="QWGraph Documentation v2.0" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
 
     </a>
-    QWGraph Documentation
+    QWGraph Documentation v2.0
   </label>
   
   <ul class="md-nav__list" data-md-scrollfix>
@@ -240,6 +240,39 @@
   <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       Installation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-from-pip" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. From pip
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. From source
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dependencies
     </span>
   </a>
   
@@ -326,6 +359,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-from-pip" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. From pip
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-from-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. From source
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dependencies
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -348,8 +414,25 @@
 This package's aim is to provide an efficient implementation of quantum walks on graphs. </p>
 <p>The quantum walk model implemented in this package follows the paper https://arxiv.org/abs/2310.10451 . This model is specifically designed for searching.</p>
 <p>Most of the critical functions of this package are implemented and compiled in rust, providing an efficient simulation.</p>
+<p>An example notebook can be found at https://github.com/mroget/qwgraph/demo.ipynb</p>
 <h2 id="installation">Installation</h2>
-<p><strong>TODO</strong></p>
+<h3 id="1-from-pip">1. From pip</h3>
+<p><code>pip install qwgraph</code>
+For windows users, it might be necessary to install the rust toolchain cargo.</p>
+<h3 id="2-from-source">2. From source</h3>
+<pre><code>git clone git@github.com:mroget/qwgraph.git
+cd qwgraph
+./build.sh
+</code></pre>
+<p>The script <code>build.sh</code> will compile everything and install it as a python package locally on your machine. It requires to install maturin via
+<code>pip install maturin</code></p>
+<h2 id="dependencies">Dependencies</h2>
+<pre><code>+ `numpy`
++ `matplotlib`
++ `networkx`
++ `pandas`
++ `tqdm`
+</code></pre>
 
 
 
