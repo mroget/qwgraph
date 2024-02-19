@@ -16,3 +16,7 @@ rm -rf target/wheels/mac
 ssh -p10022 localhost "rm qwgraph.zip"
 ssh -p10022 localhost "rm -rf qwgraph"
 rm qwgraph.zip
+twine upload -r pypi target/wheels/* 
+echo "Ensure that the doc has been updated (version included) and press any key to continue ..."
+cd doc
+mkdocs gh-deploy
