@@ -293,7 +293,7 @@ class QWSearch:
         
 
     def __get_edge_index(self, searched):
-        if self.__search_nodes:
+        if self.__search_nodes and searched in self.__virtual_edges:
             edge = self.__virtual_edges[searched]
             index = self.__index[edge]
         else:

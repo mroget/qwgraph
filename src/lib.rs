@@ -121,21 +121,6 @@ impl QWFast {
         Ok((pos,max))
     }
 
-    /*
-    fn carac_multiple(&mut self, C : Vec<Vec<Cplx>>, R : Vec<Vec<Cplx>>, args : Vec<(Vec<usize>,PyObject)>, waiting : i32, parallalized : usize, pbar : bool) -> PyResult<Vec<(PyObject,usize,f64)>> {
-        let f = |x : &(Vec<usize>,PyObject)| {
-            let mut current = self.clone();
-            let (search,label) = x;
-            let (t,p) = current.carac(C.clone(),R.clone(),search.clone(),waiting).unwrap();
-            (label.clone(),t,p)
-        };
-        if parallalized>1 {
-            Ok(args.par_iter().progress_count(args.len() as u64).map(f).collect::<Vec<(PyObject,usize,f64)>>())
-        }
-        else {
-            Ok(args.iter().progress_count(args.len() as u64).map(f).collect::<Vec<(PyObject,usize,f64)>>())
-        }
-    }*/
 }
 
 /// A Python module implemented in Rust. The name of this function must match
