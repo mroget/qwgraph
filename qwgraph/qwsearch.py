@@ -19,6 +19,7 @@ import warnings
 from qwgraph import qwgraph as qwfast
 
 
+
 ###############################################
 ##                  QW Class                 ##
 ###############################################
@@ -97,8 +98,11 @@ class QWSearch:
             s[i] = (i,f"new_node{i}")
         return s
 
-    def nodes(self):
+    def nodes(self, real_only=False):
         """ Returns the list of nodes. Convenient when declaring which nodes are marked.
+
+        Args:
+            real_only (boolean, optional): If True, then only the real nodes will be returned. Has no effect when search_nodes==False.
 
         Returns:
             (list of node): The list of nodes of the underlying graph.
@@ -341,7 +345,16 @@ class QWSearch:
             >>> [np.round(qw.get_proba([e]),3) for e in qw.edges()]
             [0.0, 0.25, 0.625, 0.0, 0.125, 0.0]
         """
-        self.__qwf.run(C,R,ticks,[self.__get_edge_index(i)[1] for i in searched])
+        Coin = qwfast.Coin()
+        if type(C) == type(dict()):
+            Coin.set_micro([C[e] for e in self.edges()])
+        elif len(np.shape(C)) == 2:
+            Coin.set_macro(C)
+        elif len(np.shape(C)) == 3:
+            Coin.set_micro(C)
+        else:
+            raise "Wrong dimension for the coin"
+        self.__qwf.run(Coin,R,ticks,[self.__get_edge_index(i)[1] for i in searched])
         self.step+=ticks
 
     def search(self, C, R, searched=[], ticks=1, progress=False):

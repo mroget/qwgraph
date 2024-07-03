@@ -4,6 +4,46 @@ use rayon::prelude::*;
 
 type Cplx = num_complex::Complex<f64>;
 
+#[pyclass]
+struct Coin {
+    is_macro : bool,
+    coin : Vec<Vec<Cplx>>,
+    coins : Vec<Vec<Vec<Cplx>>>,
+}
+impl Clone for Coin {
+    fn clone(&self) -> Self {
+        Coin{is_macro:self.is_macro, coin:self.coin.clone(), coins:self.coins.clone()}
+    }
+}
+impl Coin {
+    fn get_coin(&self, e : usize) -> &Vec<Vec<Cplx>> {
+        if self.is_macro {
+            &self.coin
+        } else {
+            &self.coins[e]
+        }
+    }
+}
+#[pymethods]
+impl Coin {
+    #[new]
+    fn new() -> Self {
+        Coin{is_macro:true, coin:Vec::new(), coins:Vec::new()}
+    }
+
+    fn set_macro(&mut self, coin : Vec<Vec<Cplx>>) {
+        self.is_macro = true;
+        self.coin = coin;
+        self.coins = Vec::new();
+    }
+
+    fn set_micro(&mut self, coins : Vec<Vec<Vec<Cplx>>>) {
+        self.is_macro = false;
+        self.coin = Vec::new();
+        self.coins = coins;
+    }
+}
+
 
 
 #[pyclass]
@@ -27,11 +67,12 @@ impl Clone for QWFast {
 }
 
 impl QWFast {
-    fn coin(&mut self, c : &Vec<Vec<Cplx>>) {
+    fn coin(&mut self, c : &Coin) {
         for i in 0..self.e {
+            let op = c.get_coin(i);
             let (u1,u2) = (self.state[2*i],self.state[2*i+1]);
-            self.state[2*i] = c[0][0]*u1 + c[0][1]*u2;
-            self.state[2*i+1] = c[1][0]*u1 + c[1][1]*u2;
+            self.state[2*i] = op[0][0]*u1 + op[0][1]*u2;
+            self.state[2*i+1] = op[1][0]*u1 + op[1][1]*u2;
         }
     }
 
@@ -71,7 +112,7 @@ impl QWFast {
         ret
     }
 
-    fn run(&mut self, c : Vec<Vec<Cplx>>, r : Vec<Vec<Cplx>>, ticks : usize, search : Vec<usize>) {
+    fn run(&mut self, c : Coin, r : Vec<Vec<Cplx>>, ticks : usize, search : Vec<usize>) {
         for _i in 0..ticks {
             self.oracle(&search,&r);
             self.coin(&c);
@@ -91,7 +132,7 @@ impl QWFast {
         Ok(p)
     }
 
-    fn carac(&mut self, c : Vec<Vec<Cplx>>, r : Vec<Vec<Cplx>>, search : Vec<usize>, waiting : i32) -> PyResult<(usize,f64)> {
+    fn carac(&mut self, c : Coin, r : Vec<Vec<Cplx>>, search : Vec<usize>, waiting : i32) -> PyResult<(usize,f64)> {
         let mut current : f64 = self.get_proba(search.clone()).unwrap();
         let mut min : f64 = current;
         let mut max : f64 = current;
@@ -127,5 +168,6 @@ impl QWFast {
 #[pymodule]
 fn qwgraph(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<QWFast>()?;
+    m.add_class::<Coin>()?;
     Ok(())
 }
