@@ -68,6 +68,15 @@ X = \\left(\\begin{matrix}
 \\end{matrix}\\right)
 $$
 """
+Y = np.array([[0,-1j],[1j,0]],dtype=complex)
+""" 
+$$
+Y = \\left(\\begin{matrix}
+0 & -i \\\\
+i & 0 \\\\
+\\end{matrix}\\right)
+$$
+"""
 Z = np.array([[1,0],[0,-1]],dtype=complex)
 """ 
 $$
