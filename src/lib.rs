@@ -1,8 +1,6 @@
 use pyo3::prelude::*;
 use num_complex;
 use rayon::prelude::*;
-use indicatif::ParallelProgressIterator;
-use indicatif::ProgressIterator;
 
 type Cplx = num_complex::Complex<f64>;
 
@@ -29,11 +27,11 @@ impl Clone for QWFast {
 }
 
 impl QWFast {
-    fn coin(&mut self, C : &Vec<Vec<Cplx>>) {
+    fn coin(&mut self, c : &Vec<Vec<Cplx>>) {
         for i in 0..self.e {
             let (u1,u2) = (self.state[2*i],self.state[2*i+1]);
-            self.state[2*i] = C[0][0]*u1 + C[0][1]*u2;
-            self.state[2*i+1] = C[1][0]*u1 + C[1][1]*u2;
+            self.state[2*i] = c[0][0]*u1 + c[0][1]*u2;
+            self.state[2*i+1] = c[1][0]*u1 + c[1][1]*u2;
         }
     }
 
@@ -52,11 +50,11 @@ impl QWFast {
         }
     }
 
-    fn oracle(&mut self, search : &Vec<usize>, R : &Vec<Vec<Cplx>>) {
+    fn oracle(&mut self, search : &Vec<usize>, r : &Vec<Vec<Cplx>>) {
         for i in search.iter() {
             let (u1,u2) = (self.state[2*i],self.state[2*i+1]);
-            self.state[2*i] = R[0][0]*u1 + R[0][1]*u2;
-            self.state[2*i+1] = R[1][0]*u1 + R[1][1]*u2;
+            self.state[2*i] = r[0][0]*u1 + r[0][1]*u2;
+            self.state[2*i+1] = r[1][0]*u1 + r[1][1]*u2;
         }
     }
 }
@@ -73,10 +71,10 @@ impl QWFast {
         ret
     }
 
-    fn run(&mut self, C : Vec<Vec<Cplx>>, R : Vec<Vec<Cplx>>, ticks : usize, search : Vec<usize>) {
-        for i in 0..ticks {
-            self.oracle(&search,&R);
-            self.coin(&C);
+    fn run(&mut self, c : Vec<Vec<Cplx>>, r : Vec<Vec<Cplx>>, ticks : usize, search : Vec<usize>) {
+        for _i in 0..ticks {
+            self.oracle(&search,&r);
+            self.coin(&c);
             self.scattering();
         }
     }
@@ -93,7 +91,7 @@ impl QWFast {
         Ok(p)
     }
 
-    fn carac(&mut self, C : Vec<Vec<Cplx>>, R : Vec<Vec<Cplx>>, search : Vec<usize>, waiting : i32) -> PyResult<(usize,f64)> {
+    fn carac(&mut self, c : Vec<Vec<Cplx>>, r : Vec<Vec<Cplx>>, search : Vec<usize>, waiting : i32) -> PyResult<(usize,f64)> {
         let mut current : f64 = self.get_proba(search.clone()).unwrap();
         let mut min : f64 = current;
         let mut max : f64 = current;
@@ -103,7 +101,7 @@ impl QWFast {
         self.reset();
 
         loop {
-            self.run(C.clone(),R.clone(),1,search.clone());
+            self.run(c.clone(),r.clone(),1,search.clone());
             steps+=1;
             current = self.get_proba(search.clone()).unwrap();
             if waiting <= 0 && current < (max+min)/2. {
