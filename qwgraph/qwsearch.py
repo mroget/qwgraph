@@ -419,7 +419,8 @@ class QWSearch:
         self.__qwf.run(Coin,Scatter,R,ticks,[self.__get_edge_index(i)[1] for i in searched])
         self.step+=ticks
 
-    def search(self, C, R, S="grover", searched=[], ticks=1, progress=False):
+
+    def search(self, C, R, S="grover", searched=[], ticks=1):
         """ Run the simulation with coin `C`, oracle `R` for ticks steps and with searched elements `searched`.
 
         This method does the same thing than `run`, but returns the probability of success at every steps. For every marked element m, the probability of measuring m at every step is returned.
@@ -465,20 +466,18 @@ class QWSearch:
             10    10  0.000085  0.000036  0.000022  0.000015  0.000012
 
         """
-        p = {}
-        p["step"] = [self.step]
-        p["p_succ"] = [self.get_proba(searched)]
-        for i in searched:
-            p[i] = [self.get_proba([i])]
-        
-        for i in (tqdm(range(ticks))) if progress else (range(ticks)):
-            self.run(C,R,S=S,ticks=1,searched=searched)
-            
-            p["p_succ"].append(self.get_proba(searched))
-            p["step"].append(self.step)
-            for i in searched:
-                p[i].append(self.get_proba([i]))
-        return pd.DataFrame(p)
+
+        Coin = self._read_coin(C)
+        Scatter = self._read_scatter(S)
+
+
+        p = self.__qwf.search(Coin,Scatter,R,ticks,[self.__get_edge_index(i)[1] for i in searched])
+
+        p = [[self.step + i] + p[i] for i in range(len(p))]
+
+        self.step+=ticks
+
+        return pd.DataFrame(p,columns=["step", "p_succ"] + list(searched))
 
     def get_unitary(self, C, R, S="grover", searched=[], dataframe=False, progress=False):
         """ For a given coin, oracle and set of searched edges, compute and return the unitary U coresponding to one step of the QW.

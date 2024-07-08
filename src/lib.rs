@@ -263,6 +263,19 @@ impl QWFast {
             self.state[2*i+1] = r[1][0]*u1 + r[1][1]*u2;
         }
     }
+
+    fn measure(&mut self, search : &Vec<usize>) -> Vec<f64> {
+        let mut ret = Vec::new();
+        ret.push(0.);
+
+        for i in search.iter() {
+            let tmp = self.state[2*i].norm().powi(2) + self.state[2*i+1].norm().powi(2);
+            ret[0]+= tmp;
+            ret.push(tmp);
+        }
+
+        ret
+    }
 }
 
 #[pymethods]
@@ -283,6 +296,18 @@ impl QWFast {
             self.coin(&c);
             self.scattering(&s);
         }
+    }
+
+    fn search(&mut self, c : Coin, s : Scattering, r : Vec<Vec<Cplx>>, ticks : usize, search : Vec<usize>) -> PyResult<Vec<Vec<f64>>> {
+        let mut ret = Vec::new();
+        for _i in 0..ticks {
+            ret.push(self.measure(&search));
+            self.oracle(&search,&r);
+            self.coin(&c);
+            self.scattering(&s);
+        }
+        ret.push(self.measure(&search));
+        Ok(ret)
     }
 
     fn reset(&mut self) {
