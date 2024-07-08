@@ -20,6 +20,47 @@ from qwgraph import qwgraph as qwfast
 
 
 
+class Scattering:
+    def __init__(self, data, per_node=True):
+        self.data = data
+        self.per_node = per_node
+
+    def _read_nodes(self, nodes):
+        ret = [[] for i in nodes]
+        if type(self.data) == type(list()):
+            return self.data
+
+        for i in range(len(nodes)):
+            if type(self.data) == dict: # Dictionnary
+                ret[i] = self.data[nodes[i]]
+            else: # Function
+                ret[i] = self.data(nodes[i])
+        return ret
+
+    def _read_degree(self, degree):
+        ret = [[] for i in range(max(degree)+1)]
+        if type(self.data) == type(list()):
+            return self.data
+
+        for i in degree:
+            if type(self.data) == dict: # Dictionnary
+                ret[i] = self.data[i]
+            else: # Function
+                ret[i] = self.data(i)
+        return ret
+
+    def _get_scatter(self, nodes, deg_max):
+        Scatter = qwfast.Scattering()
+        if self.per_node:
+            Scatter.set_type(3, self._read_nodes(nodes))
+        else:
+            Scatter.set_type(2, self._read_degree(deg_max))
+        return Scatter
+            
+
+
+
+
 ###############################################
 ##                  QW Class                 ##
 ###############################################
@@ -305,6 +346,32 @@ class QWSearch:
             index = self.__index[edge]
         return edge,index
 
+    def _read_coin(self, C):
+        Coin = qwfast.Coin()
+        if type(C) == type(dict()): # Dictionnary
+            Coin.set_micro([C[e] for e in self.edges()])
+        elif len(np.shape(C)) == 2: # One matrix
+            Coin.set_macro(C)
+        elif len(np.shape(C)) == 3: # List of matrices
+            Coin.set_micro(C)
+        else:
+            raise "Wrong dimension for the coin"
+        return Coin
+
+
+    def _read_scatter(self, S):
+        Scatter = qwfast.Scattering()
+        if S == "cycle":
+            Scatter.set_type(0, [])
+        elif S == "grover":
+            Scatter.set_type(1, [])
+        elif type(S) == type(Scattering([])):
+            Scatter = S._get_scatter(self.__nodes, list(set(list(dict(nx.degree(self.__G)).values()))))
+
+        else:
+            raise "Wrong argument for the scattering"
+        return Scatter
+
 
     def get_proba(self, searched):
         """ Returns the probability to measure on of the searched element.
@@ -326,7 +393,7 @@ class QWSearch:
         """
         return self.__qwf.get_proba([self.__get_edge_index(i)[1] for i in searched])
 
-    def run(self, C, R, searched=[], ticks=1):
+    def run(self, C, R, S="grover", searched=[], ticks=1):
         """ Run the simulation with coin `C`, oracle `R` for ticks steps and with searched elements `search`.
         Nothing will be returned but the inner state will be modified inplace.
 
@@ -345,19 +412,14 @@ class QWSearch:
             >>> [np.round(qw.get_proba([e]),3) for e in qw.edges()]
             [0.0, 0.25, 0.625, 0.0, 0.125, 0.0]
         """
-        Coin = qwfast.Coin()
-        if type(C) == type(dict()):
-            Coin.set_micro([C[e] for e in self.edges()])
-        elif len(np.shape(C)) == 2:
-            Coin.set_macro(C)
-        elif len(np.shape(C)) == 3:
-            Coin.set_micro(C)
-        else:
-            raise "Wrong dimension for the coin"
-        self.__qwf.run(Coin,R,ticks,[self.__get_edge_index(i)[1] for i in searched])
+        Coin = self._read_coin(C)
+        Scatter = self._read_scatter(S)
+
+
+        self.__qwf.run(Coin,Scatter,R,ticks,[self.__get_edge_index(i)[1] for i in searched])
         self.step+=ticks
 
-    def search(self, C, R, searched=[], ticks=1, progress=False):
+    def search(self, C, R, S="grover", searched=[], ticks=1, progress=False):
         """ Run the simulation with coin `C`, oracle `R` for ticks steps and with searched elements `searched`.
 
         This method does the same thing than `run`, but returns the probability of success at every steps. For every marked element m, the probability of measuring m at every step is returned.
@@ -410,7 +472,7 @@ class QWSearch:
             p[i] = [self.get_proba([i])]
         
         for i in (tqdm(range(ticks))) if progress else (range(ticks)):
-            self.run(C,R,ticks=1,searched=searched)
+            self.run(C,R,S=S,ticks=1,searched=searched)
             
             p["p_succ"].append(self.get_proba(searched))
             p["step"].append(self.step)
@@ -418,7 +480,7 @@ class QWSearch:
                 p[i].append(self.get_proba([i]))
         return pd.DataFrame(p)
 
-    def get_unitary(self, C, R, searched=[], dataframe=False, progress=False):
+    def get_unitary(self, C, R, S="grover", searched=[], dataframe=False, progress=False):
         """ For a given coin, oracle and set of searched edges, compute and return the unitary U coresponding to one step of the QW.
 
         This method **do not** change the state of the QW.
@@ -454,7 +516,7 @@ class QWSearch:
         U = []
         for i in (tqdm(range(2*self.__E),ncols=100)) if progress else (range(2*self.__E)):
             self.__qwf.state = np.array([int(i==j) for j in range(2*self.__E)],dtype=complex)
-            self.run(C, R, ticks=1, searched=searched)
+            self.run(C, R, S=S, ticks=1, searched=searched)
             U.append(copy.deepcopy(self.__qwf.state))
         self.__qwf.state = old_state
         self.step=old_step
@@ -465,7 +527,7 @@ class QWSearch:
         else:
             return U
 
-    def get_T_P(self, C, R, searched=[], waiting=10):
+    def get_T_P(self, C, R, S="grover", searched=[], waiting=10):
         """ Computes the hitting time and probability of success for a given QW. 
 
         The waiting parameter is used to accumalate informations about the signal (recommended to be at least 10).
@@ -494,6 +556,8 @@ class QWSearch:
         """
 
         self.reset()
-        ret = self.__qwf.carac(C,R,[self.__get_edge_index(i)[1] for i in searched],waiting)
+        Coin = self._read_coin(C)
+        Scatter = self._read_scatter(S)
+        ret = self.__qwf.carac(Coin,Scatter,R,[self.__get_edge_index(i)[1] for i in searched],waiting)
         self.reset()
         return ret

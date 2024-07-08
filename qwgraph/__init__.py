@@ -1,1 +1,1 @@
-from qwgraph.qwsearch import QWSearch
+from qwgraph.qwsearch import QWSearch, Scattering

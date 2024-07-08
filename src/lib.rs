@@ -1,8 +1,27 @@
 use pyo3::prelude::*;
 use num_complex;
 use rayon::prelude::*;
+use std::f64::consts::PI;
 
 type Cplx = num_complex::Complex<f64>;
+
+fn dot(a : &Vec<Vec<Cplx>>, b : &Vec<Cplx>) -> Vec<Cplx> {
+    assert!(a[0].len() == b.len());
+    let mut c = b.clone();
+    for i in 0..a.len() {
+        let mut s = Cplx::new(0.,0.);
+        for j in 0..b.len() {
+            s += a[i][j] * b[j];
+        }   
+        c[i] = s;
+    }
+    c
+}
+
+
+/*************************************************************/
+/*******                Coin Class                    ********/
+/*************************************************************/
 
 #[pyclass]
 struct Coin {
@@ -46,6 +65,89 @@ impl Coin {
 
 
 
+
+
+
+
+
+
+/*************************************************************/
+/*******              Scattering Class                ********/
+/*************************************************************/
+
+#[pyclass]
+struct Scattering {
+    r#type : usize, // 0: Cycle, 1: Grover, 2: degree fct, 3: node fct
+    fct : Vec<Vec<Vec<Cplx>>>, // fct
+}
+impl Clone for Scattering {
+    fn clone(&self) -> Self {
+        Scattering{r#type:self.r#type, fct:self.fct.clone()}
+    }
+}
+impl Scattering {
+    fn get_op(&self, node : usize, degree : usize) -> Vec<Vec<Cplx>> {
+        match self.r#type {
+            0 => { // Cycle
+                let mut mat = vec![vec![Cplx::new(0.,0.); degree]; degree];
+                for i in 0..(degree-1) {
+                    mat[i+1][i] = Cplx::new(1.,0.);
+                }
+                mat[0][degree-1] = Cplx::new(1.,0.);
+                mat
+            },
+            1 => { // Grover
+                let mut mat = vec![vec![Cplx::new(0.,0.); degree]; degree];
+                for i in 0..degree {
+                    for j in 0..degree {
+                        mat[i][j] = Cplx::new(2./(degree as f64),0.);
+                    }
+                    mat[i][i] = mat[i][i] - Cplx::new(1.,0.);
+                }
+                mat
+            },
+            2 => { // Degree Function
+                self.fct[degree].clone()
+            },
+            3 => { // Node Function
+                self.fct[node].clone()
+            },
+            _ => {panic!("Wrong identifier for scattering operator !")},
+        }
+    }
+}
+#[pymethods]
+impl Scattering {
+    #[new]
+    fn new() -> Self {
+        Scattering{r#type:0, fct:Vec::new()}
+    }
+
+    fn set_type(&mut self, r#type : usize, fct : Vec<Vec<Vec<Cplx>>>) {
+        self.r#type = r#type;
+        self.fct = fct;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*************************************************************/
+/*******                  QW Class                    ********/
+/*************************************************************/
+
+
 #[pyclass]
 struct QWFast {
     #[pyo3(get, set)]
@@ -76,19 +178,32 @@ impl QWFast {
         }
     }
 
-    fn scattering(&mut self) {
-        let mut mu : Vec<Cplx> = vec![Cplx::new(0.,0.);self.n];
-        let mut size : Vec<usize> = vec![0;self.n];
+    fn apply(&mut self, u : &Vec<Vec<Cplx>>, targets : &Vec<usize>) {
+        assert!(u.len() == u[0].len() && u.len() == targets.len());
+        let mut tmp = Vec::with_capacity(targets.len());
+        for &i in targets.iter() {
+            tmp.push(self.state[i]);
+        }
+
+        tmp = dot(u, &tmp);
+
+        for i in 0..tmp.len() {
+            self.state[targets[i]] = tmp[i];
+        }
+    }
+
+    fn scattering(&mut self, s : &Scattering) {
+        let mut nodes : Vec<Vec<usize>> =  Vec::new();
+        for _i in 0..self.n {nodes.push(Vec::new());}
         for i in 0..(2*self.e) {
-            mu[self.wiring[i]] += self.state[i];
-            size[self.wiring[i]] += 1;
+            nodes[self.wiring[i]].push(i);
         }
-        for i in 0..mu.len() {
-            mu[i] = mu[i]/(size[i] as f64);
+        for i in 0..self.n {
+            nodes[i].sort();
+            self.apply(&s.get_op(i, nodes[i].len()), &nodes[i]);
         }
-        for i in 0..(2*self.e) {
-            self.state[i] = 2.*mu[self.wiring[i]] - self.state[i];
-        }
+        
+
     }
 
     fn oracle(&mut self, search : &Vec<usize>, r : &Vec<Vec<Cplx>>) {
@@ -112,11 +227,11 @@ impl QWFast {
         ret
     }
 
-    fn run(&mut self, c : Coin, r : Vec<Vec<Cplx>>, ticks : usize, search : Vec<usize>) {
+    fn run(&mut self, c : Coin, s : Scattering, r : Vec<Vec<Cplx>>, ticks : usize, search : Vec<usize>) {
         for _i in 0..ticks {
             self.oracle(&search,&r);
             self.coin(&c);
-            self.scattering();
+            self.scattering(&s);
         }
     }
 
@@ -132,7 +247,7 @@ impl QWFast {
         Ok(p)
     }
 
-    fn carac(&mut self, c : Coin, r : Vec<Vec<Cplx>>, search : Vec<usize>, waiting : i32) -> PyResult<(usize,f64)> {
+    fn carac(&mut self, c : Coin, s : Scattering, r : Vec<Vec<Cplx>>, search : Vec<usize>, waiting : i32) -> PyResult<(usize,f64)> {
         let mut current : f64 = self.get_proba(search.clone()).unwrap();
         let mut min : f64 = current;
         let mut max : f64 = current;
@@ -142,7 +257,7 @@ impl QWFast {
         self.reset();
 
         loop {
-            self.run(c.clone(),r.clone(),1,search.clone());
+            self.run(c.clone(),s.clone(),r.clone(),1,search.clone());
             steps+=1;
             current = self.get_proba(search.clone()).unwrap();
             if waiting <= 0 && current < (max+min)/2. {
@@ -169,5 +284,6 @@ impl QWFast {
 fn qwgraph(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<QWFast>()?;
     m.add_class::<Coin>()?;
+    m.add_class::<Scattering>()?;
     Ok(())
 }
