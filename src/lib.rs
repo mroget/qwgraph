@@ -1,7 +1,16 @@
 use pyo3::prelude::*;
 use num_complex;
 use rayon::prelude::*;
-use std::f64::consts::PI;
+
+#[macro_export]
+macro_rules! neighbor {
+    ( $x:expr  ) => {
+        {
+            if $x%2==0 {$x+1} else {$x-1}
+        }
+    };
+}
+
 
 type Cplx = num_complex::Complex<f64>;
 
@@ -35,12 +44,23 @@ impl Clone for Coin {
     }
 }
 impl Coin {
-    fn get_coin(&self, e : usize) -> &Vec<Vec<Cplx>> {
+    fn apply(&self, e : usize, state : &mut Vec<Cplx>) {
         if self.is_macro {
-            &self.coin
-        } else {
-            &self.coins[e]
+            for i in 0..e {
+                let (u1,u2) = (state[2*i],state[2*i+1]);
+                state[2*i] = self.coin[0][0]*u1 + self.coin[0][1]*u2;
+                state[2*i+1] = self.coin[1][0]*u1 + self.coin[1][1]*u2;
+            }
         }
+        else {
+            for i in 0..e {
+                let (u1,u2) = (state[2*i],state[2*i+1]);
+                state[2*i] = self.coins[i][0][0]*u1 + self.coins[i][0][1]*u2;
+                state[2*i+1] = self.coins[i][1][0]*u1 + self.coins[i][1][1]*u2;
+            }
+        }
+        
+        
     }
 }
 #[pymethods]
@@ -79,40 +99,99 @@ impl Coin {
 struct Scattering {
     r#type : usize, // 0: Cycle, 1: Grover, 2: degree fct, 3: node fct
     fct : Vec<Vec<Vec<Cplx>>>, // fct
+    perm : Option<Vec<usize>>,
 }
 impl Clone for Scattering {
     fn clone(&self) -> Self {
-        Scattering{r#type:self.r#type, fct:self.fct.clone()}
+        Scattering{r#type:self.r#type, fct:self.fct.clone(), perm:self.perm.clone()}
     }
 }
 impl Scattering {
-    fn get_op(&self, node : usize, degree : usize) -> Vec<Vec<Cplx>> {
-        match self.r#type {
-            0 => { // Cycle
-                let mut mat = vec![vec![Cplx::new(0.,0.); degree]; degree];
-                for i in 0..(degree-1) {
-                    mat[i+1][i] = Cplx::new(1.,0.);
-                }
-                mat[0][degree-1] = Cplx::new(1.,0.);
-                mat
-            },
-            1 => { // Grover
-                let mut mat = vec![vec![Cplx::new(0.,0.); degree]; degree];
-                for i in 0..degree {
-                    for j in 0..degree {
-                        mat[i][j] = Cplx::new(2./(degree as f64),0.);
+    fn apply_on_node(&self, u : &Vec<Vec<Cplx>>, targets : &Vec<usize>, state : &mut Vec<Cplx>) {
+        assert!(u.len() == u[0].len() && u.len() == targets.len());
+        let mut tmp = Vec::with_capacity(targets.len());
+        for &i in targets.iter() {
+            tmp.push(state[i]);
+        }
+
+        tmp = dot(u, &tmp);
+
+        for i in 0..tmp.len() {
+            state[targets[i]] = tmp[i];
+        }
+    }
+
+    fn apply_fct(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+        let mut nodes : Vec<Vec<usize>> =  Vec::new();
+        for _i in 0..n {nodes.push(Vec::new());}
+        for i in 0..(2*e) {
+            nodes[wiring[i]].push(i);
+        }
+        for i in 0..n {
+            nodes[i].sort_by(|a, b| wiring[neighbor!(a)].partial_cmp(&wiring[neighbor!(b)]).unwrap());
+            if self.r#type == 2 {
+                self.apply_on_node(&self.fct[nodes[i].len()], &nodes[i], state);
+            }
+            if self.r#type == 3 {
+                self.apply_on_node(&self.fct[i], &nodes[i], state);
+            }
+        }
+    }
+
+    fn apply_grover(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+        let mut mu : Vec<Cplx> = vec![Cplx::new(0.,0.);n];
+        let mut size : Vec<usize> = vec![0;n];
+        for i in 0..(2*e) {
+            mu[wiring[i]] += state[i];
+            size[wiring[i]] += 1;
+        }
+        for i in 0..mu.len() {
+            mu[i] = mu[i]/(size[i] as f64);
+        }
+        for i in 0..(2*e) {
+            state[i] = 2.*mu[wiring[i]] - state[i];
+        }
+    }
+
+    fn apply_perm(&mut self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+        let perm = 
+            match &self.perm {
+                None => { // create the permutation for the first time
+                    let mut nodes : Vec<Vec<usize>> =  Vec::new();
+                    for _i in 0..n {nodes.push(Vec::new());}
+                    for i in 0..(2*e) {
+                        nodes[wiring[i]].push(i);
                     }
-                    mat[i][i] = mat[i][i] - Cplx::new(1.,0.);
-                }
-                mat
-            },
-            2 => { // Degree Function
-                self.fct[degree].clone()
-            },
-            3 => { // Node Function
-                self.fct[node].clone()
-            },
-            _ => {panic!("Wrong identifier for scattering operator !")},
+                    for i in 0..n {
+                        nodes[i].sort_by(|a, b| wiring[neighbor!(a)].partial_cmp(&wiring[neighbor!(b)]).unwrap());
+                    }
+                    let mut perm = vec![0; 2*e];
+                    for i in 0..n {
+                        for j in 0..(nodes[i].len()-1) {
+                            perm[nodes[i][j]] = nodes[i][j+1];
+                        }
+                        perm[nodes[i][nodes[i].len()-1]] = nodes[i][0];
+                    }
+                    self.perm = Some(perm);
+                    self.perm.clone().unwrap()
+                },
+                Some(x) => {x.clone()},
+            };
+
+        // apply the permutation
+        let tmp = state.clone();
+        for i in 0..(2*e) {
+            state[perm[i]] = tmp[i];
+        }
+    }
+
+    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+        match self.r#type {
+            0 => {self.apply_grover(e, n, state, wiring);},
+            1 => {self.apply_grover(e, n, state, wiring);},
+            2 => {self.apply_fct(e, n, state, wiring);},
+            3 => {self.apply_fct(e, n, state, wiring);},
+            _ => {panic!("Wrong identifier for scattering operator !");},
         }
     }
 }
@@ -120,7 +199,7 @@ impl Scattering {
 impl Scattering {
     #[new]
     fn new() -> Self {
-        Scattering{r#type:0, fct:Vec::new()}
+        Scattering{r#type:0, fct:Vec::new(), perm:None}
     }
 
     fn set_type(&mut self, r#type : usize, fct : Vec<Vec<Vec<Cplx>>>) {
@@ -170,40 +249,11 @@ impl Clone for QWFast {
 
 impl QWFast {
     fn coin(&mut self, c : &Coin) {
-        for i in 0..self.e {
-            let op = c.get_coin(i);
-            let (u1,u2) = (self.state[2*i],self.state[2*i+1]);
-            self.state[2*i] = op[0][0]*u1 + op[0][1]*u2;
-            self.state[2*i+1] = op[1][0]*u1 + op[1][1]*u2;
-        }
-    }
-
-    fn apply(&mut self, u : &Vec<Vec<Cplx>>, targets : &Vec<usize>) {
-        assert!(u.len() == u[0].len() && u.len() == targets.len());
-        let mut tmp = Vec::with_capacity(targets.len());
-        for &i in targets.iter() {
-            tmp.push(self.state[i]);
-        }
-
-        tmp = dot(u, &tmp);
-
-        for i in 0..tmp.len() {
-            self.state[targets[i]] = tmp[i];
-        }
+        c.apply(self.e, &mut self.state)
     }
 
     fn scattering(&mut self, s : &Scattering) {
-        let mut nodes : Vec<Vec<usize>> =  Vec::new();
-        for _i in 0..self.n {nodes.push(Vec::new());}
-        for i in 0..(2*self.e) {
-            nodes[self.wiring[i]].push(i);
-        }
-        for i in 0..self.n {
-            nodes[i].sort();
-            self.apply(&s.get_op(i, nodes[i].len()), &nodes[i]);
-        }
-        
-
+        s.apply(self.e, self.n, &mut self.state, &self.wiring);
     }
 
     fn oracle(&mut self, search : &Vec<usize>, r : &Vec<Vec<Cplx>>) {
