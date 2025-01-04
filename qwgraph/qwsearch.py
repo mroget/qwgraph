@@ -308,6 +308,10 @@ class QWSearch:
         self.__qwf.state = state
 
 
+    def permutation(self):
+        return deepcopy(self.__qwf.get_perm()) # TODO: change labels
+
+
     def reset(self):
         """ Reset the state to a diagonal one and reset the current step to 0.
         Do not return anything.
