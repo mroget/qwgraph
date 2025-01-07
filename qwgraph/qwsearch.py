@@ -154,7 +154,10 @@ class QWSearch:
             [0, 1, 2, 3]
             
         """
-        return deepcopy(self.__nodes)
+        if real_only:
+            return deepcopy(self.__nodes)
+        else:
+            return self.__nodes + list(self.virtual_edges.keys())
 
     def edges(self):
         """ Returns the list of edges. Convenient when declaring which edges are marked.
