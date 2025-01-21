@@ -15,6 +15,8 @@ from copy import deepcopy
 from tqdm import tqdm
 import pandas as pd
 import warnings
+from enum import Enum
+import sys
 
 from qwgraph import qwgraph as qwfast
 
@@ -59,6 +61,17 @@ class Scattering:
             
 
 
+class Polarity(Enum):
+    Minus = 0
+    Plus = 1
+
+
+class AddressingType(Enum):
+    EDGE = 0 # (u,v)
+    VIRTUAL_EDGE = 1 # u
+    NODE = 2 # u
+    AMPLITUDE = 3 # (u,v)
+
 
 
 ###############################################
@@ -84,7 +97,7 @@ class QWSearch:
     def __init__(self, graph, search_nodes=False):
         self.__search_nodes = search_nodes
         
-        self.__G = copy.deepcopy(graph)
+        self.__G = deepcopy(graph)
         
         if self.__search_nodes:
             self.__virtual_edges = self.__starify()
@@ -94,6 +107,7 @@ class QWSearch:
         self.__edges = list(self.__G.edges()) # List of edges
         self.__nodes = list(self.__G.nodes()) # List of nodes
         self.__index = {self.__edges[i]:i for i in range(len(self.__edges))} # Index for edges
+        self.__nodes_index = {self.__nodes[i]:i  for i in range(self.__N)} # Index for nodes
         self.__E = len(self.__edges) # Number of edges
         self.__N = len(self.__nodes) # Number of nodes
 
@@ -102,33 +116,36 @@ class QWSearch:
         else:
             color = {self.__nodes[i]:i for i in range(len(self.__nodes))} # Coloring
 
-        self.set_color(color)
-        
+        self.__polarity = {}
+        for (u,v) in self.__edges():
+            self.__polarity[(u,v)] = ("-" if color[u]<color[v] else "+")
+            self.__polarity[(v,u)] = ("+" if color[u]<color[v] else "-")
+
+        self.__initalize_rust_object()        
         
 
     def __initalize_rust_object(self):
         self.__amplitude_labels = [""]*2*self.__E
         wiring = [] # For any amplitude self.state[i], says to which node it is connected. Important for the scattering.
-        tmp = {self.__nodes[i]:i  for i in range(self.__N)}
         k = 0
         for (i,j) in self.__edges:
             edge_label = str(i) + "," + str(j)
-            if self.__color[i]<self.__color[j]:
-                wiring.append(tmp[i])
-                wiring.append(tmp[j])
-                self.__amplitude_labels[k] = "$\psi_{"+edge_label+"}^-$"
-                self.__amplitude_labels[k+1] = "$\psi_{"+edge_label+"}^+$"
+            if self.__polarity[(i,j)]=="-":
+                wiring.append(self.__nodes_index[i])
+                wiring.append(self.__nodes_index[j])
             else:
-                wiring.append(tmp[j])
-                wiring.append(tmp[i])
-                self.__amplitude_labels[k] = "$\psi_{"+edge_label+"}^+$"
-                self.__amplitude_labels[k+1] = "$\psi_{"+edge_label+"}^-$"
+                wiring.append(self.__nodes_index[j])
+                wiring.append(self.__nodes_index[i])
+            self.__amplitude_labels[k] = "$\psi_{"+edge_label+"}^-$"
+            self.__amplitude_labels[k+1] = "$\psi_{"+edge_label+"}^+$"
             k+=2
         
 
         self.__qwf = qwfast.QWFast(wiring,self.__N,self.__E)
-        
+        self.__around_nodes_indices = qwfast._get_indices_around_nodes(wiring,self.__N,self.__E)
+
         self.reset()
+
 
 
     def __starify(self):
@@ -207,50 +224,58 @@ class QWSearch:
         """
         return deepcopy(self.__virtual_edges)
 
-    def color(self):
-        """ Returns the coloring of the underlying graph. This coloring is essential for the QW to be well defined.
 
-        The coloring is calculated when the object is built. Two cases are possible:
-            
-        1. The graph passed to the constructor is bipartite. In this case, a 2-coloring is computed.
-            
-        2. The graph isn't bipartite. In that case, the coloring is chosen to be the trivial one. Every node has a unique number, which is its color. 
+    def set_polarity(self, polarity):
+        b = True
+        opp = lambda x:"-" if x=="+" else "+"
+        for ((u,v),val) in polarity:
+            if polarity[(u,v)] not in ["+","-"]:
+                b = False
+                break
 
-        Returns:
-            (dict): A dictionnary {node: color} that associates a color to each node.
+            if (v,u) in polarity and polarity[(v,u)] != opp(polarity[(u,v)]):
+                b = False
+                break
 
-        Examples:
-            >>> qw = QWSearch(nx.cycle_graph(4))
-            >>> qw.color()
-            {0: 1, 1: 0, 3: 0, 2: 1}
-            >>> qw = QWSearch(nx.cycle_graph(5))
-            >>> qw.color()
-            {0: 0, 1: 1, 2: 2, 3: 3, 4: 4}
-            
-        """
-        return deepcopy(self.__color)
+        if b:
+            for ((u,v),val) in polarity:
+                self.__polarity[(u,v)] = val
+                self.__polarity[(v,u)] = opp(val)
+            self.__initalize_rust_object() 
+        else:
+            print("Warning: Polarity values not valid !", file=sys.stderr)
 
-    def set_color(self, color):
-        """ Modifies the coloring of the graph. 
-        Since the coloring is essential to the definition of the QW, modifying it will reinitialize the inner state to the diagonal one. Essentially, the method set_color calls the method reset.
-        
-        Args:
-            color (dict): The new coloring for the underlying graph. Must be a dictionnary node:color
-
-        Examples:
-            >>> qw = QWSearch(nx.cycle_graph(5))
-            >>> qw.color()
-            {0: 0, 1: 1, 2: 2, 3: 3, 4: 4}
-            >>> qw.set_color(nx.greedy_color(qw.graph()))
-            >>> qw.color()
-            {0: 0, 1: 1, 2: 0, 3: 1, 4: 2}
-        """
-        self.__color = color
-        nx.set_node_attributes(self.__G, self.__color, "color")
-        self.__initalize_rust_object()
+    def __get_index(pos, _type=AddressingType.EDGE):
+        if _type == AddressingType.EDGE:
+            index = self.__index[edge]
+            return [2*index, 2*index+1]
+        if _type == AddressingType.VIRTUAL_EDGE:
+            assert(self.search_nodes and pos in self.__virtual_edges)
+            edge = self.__virtual_edges[pos]
+            index = self.__index[edge]
+            return [2*index, 2*index+1]
+        if _type == AddressingType.NODE:
+            return deepcopy(self.__around_nodes_indices[self.__nodes_index[pos]])
+        if _type == AddressingType.AMPLITUDE:
+            (u,v) = pos
+            if (u,v) in self.__index:
+                edge = (u,v)
+            else:
+                edge = (v,u)
+            index = self.__index[edge]
+            return [2*index] if self.__polarity[edge]=="-" else [2*index+1]
 
 
-    def state(self, edges = None):
+    def polarity(self, amplitudes):
+        indices = {p:self.__get_index(p,AddressingType.AMPLITUDE)[0] for p in amplitudes}
+        return {p:"-" if indices[p]%2==0 else "+" for p in amplitudes}
+
+    def label(self, positions, _type=AddressingType.EDGE):
+        indices = {p:[i for i in self.__get_index(p,_type)] for p in positions}
+        return {p:[self.__amplitude_labels[i] for i in indices[p]] for p in positions}
+
+
+    def state(self, positions, _type=AddressingType.EDGE):
         """ Return the amplitudes of one/several/every edges.
 
         For an edge (u,v), the amplitudes $\psi_{u,v}^+$ and $\psi_{u,v}^-$ will be returned in the form of a numpy array.
@@ -272,13 +297,8 @@ class QWSearch:
             {(0, 1): array([0.35355339+0.j, 0.35355339+0.j]),
              (0, 3): array([0.35355339+0.j, 0.35355339+0.j])}
         """
-        dic = {}
-        if type(edges) == type(None):
-            edges = self.__edges
-        for e in edges:
-            i = self.__get_edge_index(e)[1]
-            dic[e] = np.array([self.__qwf.state[2*i],self.__qwf.state[2*i+1]],dtype=complex)
-        return dic
+        indices = {p:[i for i in self.__get_index(p,_type)] for p in positions}
+        return {p:np.array([self.__qwf.state[i] for i in indices[p]],dtype=complex) for p in positions}
 
     def set_state(self, new_state):
         """ Change the inner state (i.e. the amplitudes for every edges).
@@ -311,8 +331,26 @@ class QWSearch:
         self.__qwf.state = state
 
 
-    def permutation(self):
-        return deepcopy(self.__qwf.get_perm()) # TODO: change labels
+    def proba(self, searched):
+        """ Returns the probability to measure on of the searched element.
+
+        Args:   
+            searched (list of edge): The list of marked edges. Every element of the list must be an edge label (all of them are listed in `qw.edges`).
+
+        Returns:
+            (float): The probability of measuring any of the marked edges.
+
+        Examples:
+            >>> qw = QWSearch(nx.complete_graph(4))
+            >>> qw.get_proba([qw.edges()[0]])
+            0.1666666666666667
+            >>> qw.get_proba([qw.edges()[0],qw.edges()[1]])
+            0.3333333333333334
+            >>> qw.get_proba(qw.edges())
+            1.
+        """
+        return self.__qwf.get_proba([self.__get_edge_index(i)[1] for i in searched])
+
 
 
     def reset(self):
@@ -344,15 +382,6 @@ class QWSearch:
         self.__qwf.reset()
         
 
-    def __get_edge_index(self, searched):
-        if self.__search_nodes and searched in self.__virtual_edges:
-            edge = self.__virtual_edges[searched]
-            index = self.__index[edge]
-        else:
-            edge = searched
-            index = self.__index[edge]
-        return edge,index
-
     def _read_coin(self, C):
         Coin = qwfast.Coin()
         if type(C) == type(dict()): # Dictionnary
@@ -379,26 +408,6 @@ class QWSearch:
             raise "Wrong argument for the scattering"
         return Scatter
 
-
-    def get_proba(self, searched):
-        """ Returns the probability to measure on of the searched element.
-
-        Args:   
-            searched (list of edge): The list of marked edges. Every element of the list must be an edge label (all of them are listed in `qw.edges`).
-
-        Returns:
-            (float): The probability of measuring any of the marked edges.
-
-        Examples:
-            >>> qw = QWSearch(nx.complete_graph(4))
-            >>> qw.get_proba([qw.edges()[0]])
-            0.1666666666666667
-            >>> qw.get_proba([qw.edges()[0],qw.edges()[1]])
-            0.3333333333333334
-            >>> qw.get_proba(qw.edges())
-            1.
-        """
-        return self.__qwf.get_proba([self.__get_edge_index(i)[1] for i in searched])
 
     def run(self, C, R, S="grover", searched=[], ticks=1):
         """ Run the simulation with coin `C`, oracle `R` for ticks steps and with searched elements `search`.

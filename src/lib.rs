@@ -27,8 +27,7 @@ fn dot(a : &Vec<Vec<Cplx>>, b : &Vec<Cplx>) -> Vec<Cplx> {
     c
 }
 
-
-fn get_perm(e : usize, n : usize, wiring : &Vec<usize>) -> Vec<usize> {
+fn get_indices_around_nodes(e : usize, n : usize, wiring : &Vec<usize>) -> Vec<Vec<usize>> {
     let mut nodes : Vec<Vec<usize>> =  Vec::new();
     for _i in 0..n {nodes.push(Vec::new());}
     for i in 0..(2*e) {
@@ -37,6 +36,25 @@ fn get_perm(e : usize, n : usize, wiring : &Vec<usize>) -> Vec<usize> {
     for i in 0..n {
         nodes[i].sort_by(|a, b| wiring[neighbor!(a)].partial_cmp(&wiring[neighbor!(b)]).unwrap());
     }
+    nodes
+}
+
+#[pyfunction]
+fn _get_indices_around_nodes(e : usize, n : usize, wiring : Vec<usize>) -> PyResult<Vec<Vec<usize>>> {
+    let mut nodes : Vec<Vec<usize>> =  Vec::new();
+    for _i in 0..n {nodes.push(Vec::new());}
+    for i in 0..(2*e) {
+        nodes[wiring[i]].push(i);
+    }
+    for i in 0..n {
+        nodes[i].sort_by(|a, b| wiring[neighbor!(a)].partial_cmp(&wiring[neighbor!(b)]).unwrap());
+    }
+    Ok(nodes)
+}
+
+
+fn get_perm(e : usize, n : usize, wiring : &Vec<usize>) -> Vec<usize> {
+    let nodes = get_indices_around_nodes(e, n, wiring);
     let mut perm = vec![0; 2*e];
     for i in 0..n {
         for j in 0..(nodes[i].len()-1) {
@@ -368,5 +386,6 @@ fn qwgraph(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<QWFast>()?;
     m.add_class::<Coin>()?;
     m.add_class::<Scattering>()?;
+    m.add_function(wrap_pyfunction!(_get_indices_around_nodes, m)?)?;
     Ok(())
 }
