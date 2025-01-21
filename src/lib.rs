@@ -41,15 +41,7 @@ fn get_indices_around_nodes(e : usize, n : usize, wiring : &Vec<usize>) -> Vec<V
 
 #[pyfunction]
 fn _get_indices_around_nodes(e : usize, n : usize, wiring : Vec<usize>) -> PyResult<Vec<Vec<usize>>> {
-    let mut nodes : Vec<Vec<usize>> =  Vec::new();
-    for _i in 0..n {nodes.push(Vec::new());}
-    for i in 0..(2*e) {
-        nodes[wiring[i]].push(i);
-    }
-    for i in 0..n {
-        nodes[i].sort_by(|a, b| wiring[neighbor!(a)].partial_cmp(&wiring[neighbor!(b)]).unwrap());
-    }
-    Ok(nodes)
+    Ok(get_indices_around_nodes(e, n, &wiring))
 }
 
 
@@ -124,7 +116,38 @@ impl Coin {
 
 
 
+/*************************************************************/
+/*******                Unitary Class                 ********/
+/*************************************************************/
 
+#[pyclass]
+#[derive(Clone)]
+struct UnitaryOp {
+    target : Vec<usize>,
+    unitary : Vec<Vec<Cplx>>,
+}
+impl UnitaryOp {
+    fn apply(&self, state : &mut Vec<Cplx>) {
+        let mut tmp = Vec::with_capacity(self.target.len());
+        for &i in self.target.iter() {
+            tmp.push(state[i]);
+        }
+
+        tmp = dot(&self.unitary, &tmp);
+
+        for i in 0..tmp.len() {
+            state[self.target[i]] = tmp[i];
+        }
+    }
+}
+
+#[pymethods]
+impl UnitaryOp {
+    #[new]
+    fn new(target : Vec<usize>, unitary : Vec<Vec<Cplx>>) -> Self {
+        UnitaryOp{target : target, unitary : unitary}
+    }
+}
 
 
 
@@ -136,11 +159,10 @@ impl Coin {
 struct Scattering {
     r#type : usize, // 0: Cycle, 1: Grover, 2: degree fct, 3: node fct
     fct : Vec<Vec<Vec<Cplx>>>, // fct
-    perm : Option<Vec<usize>>,
 }
 impl Clone for Scattering {
     fn clone(&self) -> Self {
-        Scattering{r#type:self.r#type, fct:self.fct.clone(), perm:self.perm.clone()}
+        Scattering{r#type:self.r#type, fct:self.fct.clone()}
     }
 }
 impl Scattering {
@@ -159,13 +181,8 @@ impl Scattering {
     }
 
     fn apply_fct(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
-        let mut nodes : Vec<Vec<usize>> =  Vec::new();
-        for _i in 0..n {nodes.push(Vec::new());}
-        for i in 0..(2*e) {
-            nodes[wiring[i]].push(i);
-        }
+        let nodes = get_indices_around_nodes(e, n, wiring);
         for i in 0..n {
-            nodes[i].sort_by(|a, b| wiring[neighbor!(a)].partial_cmp(&wiring[neighbor!(b)]).unwrap());
             if self.r#type == 2 {
                 self.apply_on_node(&self.fct[nodes[i].len()], &nodes[i], state);
             }
@@ -190,15 +207,8 @@ impl Scattering {
         }
     }
 
-    fn apply_perm(&mut self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
-        let perm = 
-            match &self.perm {
-                None => { // create the permutation for the first time
-                    self.perm = Some(get_perm(e,n,wiring));
-                    self.perm.clone().unwrap()
-                },
-                Some(x) => {x.clone()},
-            };
+    fn apply_perm(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+        let perm = get_perm(e,n,wiring);
 
         // apply the permutation
         let tmp = state.clone();
@@ -207,7 +217,7 @@ impl Scattering {
         }
     }
 
-    fn apply(&mut self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
         match self.r#type {
             0 => {self.apply_perm(e, n, state, wiring);},
             1 => {self.apply_grover(e, n, state, wiring);},
@@ -221,7 +231,7 @@ impl Scattering {
 impl Scattering {
     #[new]
     fn new() -> Self {
-        Scattering{r#type:0, fct:Vec::new(), perm:None}
+        Scattering{r#type:0, fct:Vec::new()}
     }
 
     fn set_type(&mut self, r#type : usize, fct : Vec<Vec<Vec<Cplx>>>) {
@@ -235,7 +245,55 @@ impl Scattering {
 
 
 
+/*************************************************************/
+/*******              Operation Class                 ********/
+/*************************************************************/
+#[derive(Clone)]
+enum Operation {
+    Scattering(Scattering),
+    Coin(Coin),
+    Apply(UnitaryOp),
+    Nothing,
+}
+impl Operation {
+    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+        match self {
+            Operation::Scattering(s) => {s.apply(e, n, state, wiring)},
+            Operation::Coin(c) => {c.apply(e,state)},
+            Operation::Apply(u) => {u.apply(state)},
+            Operation::Nothing => {},
+        }
+    }
+}
 
+
+#[pyclass]
+#[derive(Clone)]
+struct OperationWrapper {
+    op : Operation,
+}
+impl OperationWrapper {
+    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+        self.op.apply(e, n, state, wiring);
+    }
+}
+#[pymethods]
+impl OperationWrapper {
+    #[new]
+    fn new() -> Self {
+        OperationWrapper{op : Operation::Nothing}
+    }
+
+    fn set_to_coin(&mut self, c : Coin) {
+        self.op = Operation::Coin(c);
+    }
+    fn set_to_scattering(&mut self, s : Scattering) {
+        self.op = Operation::Scattering(s);
+    }
+    fn set_to_unitary(&mut self, u : UnitaryOp) {
+        self.op = Operation::Apply(u);
+    }
+}
 
 
 
@@ -270,33 +328,18 @@ impl Clone for QWFast {
 }
 
 impl QWFast {
-    fn coin(&mut self, c : &Coin) {
-        c.apply(self.e, &mut self.state)
-    }
-
-    fn scattering(&mut self, s : &mut Scattering) {
-        s.apply(self.e, self.n, &mut self.state, &self.wiring);
-    }
-
-    fn oracle(&mut self, search : &Vec<usize>, r : &Vec<Vec<Cplx>>) {
-        for i in search.iter() {
-            let (u1,u2) = (self.state[2*i],self.state[2*i+1]);
-            self.state[2*i] = r[0][0]*u1 + r[0][1]*u2;
-            self.state[2*i+1] = r[1][0]*u1 + r[1][1]*u2;
+    fn proba(&self, target : &Vec<usize>) -> f64 {
+        let mut p : f64 = 0.;
+        for &i in target.iter() {
+            p+= self.state[i].norm().powi(2);
         }
+        p
     }
 
-    fn measure(&mut self, search : &Vec<usize>) -> Vec<f64> {
-        let mut ret = Vec::new();
-        ret.push(0.);
-
-        for i in search.iter() {
-            let tmp = self.state[2*i].norm().powi(2) + self.state[2*i+1].norm().powi(2);
-            ret[0]+= tmp;
-            ret.push(tmp);
+    fn apply(&mut self, pipeline : &Vec<OperationWrapper>) {
+        for op in pipeline.iter() {
+            op.apply(self.e, self.n, &mut self.state, &self.wiring);
         }
-
-        ret
     }
 }
 
@@ -316,23 +359,28 @@ impl QWFast {
         Ok(get_perm(self.e,self.n,&self.wiring))
     }
 
-    fn run(&mut self, c : Coin, s : &mut Scattering, r : Vec<Vec<Cplx>>, ticks : usize, search : Vec<usize>) {
+    fn run(&mut self, pipeline : Vec<OperationWrapper>, ticks : usize) {
         for _i in 0..ticks {
-            self.oracle(&search,&r);
-            self.coin(&c);
-            self.scattering(s);
+            self.apply(&pipeline);
         }
     }
 
-    fn search(&mut self, c : Coin, s : &mut Scattering, r : Vec<Vec<Cplx>>, ticks : usize, search : Vec<usize>) -> PyResult<Vec<Vec<f64>>> {
+    fn run_with_trace(&mut self, pipeline : Vec<OperationWrapper>, ticks : usize) {
+        let mut ret = Vec::with_capacity(ticks+1);
+        ret.push(self.state.clone());
+        for _i in 0..ticks {
+            self.apply(&pipeline);
+            ret.push(self.state.clone());
+        }
+    }
+
+    fn search(&mut self, pipeline : Vec<OperationWrapper>, ticks : usize, measure : Vec<usize>) -> PyResult<Vec<f64>> {
         let mut ret = Vec::new();
         for _i in 0..ticks {
-            ret.push(self.measure(&search));
-            self.oracle(&search,&r);
-            self.coin(&c);
-            self.scattering(s);
+            ret.push(self.proba(&measure));
+            self.apply(&pipeline);
         }
-        ret.push(self.measure(&search));
+        ret.push(self.proba(&measure));
         Ok(ret)
     }
 
@@ -340,16 +388,12 @@ impl QWFast {
         self.state = vec![Cplx::new(1./(2.*self.e as f64).sqrt(),0.);2*self.e];
     } 
 
-    fn get_proba(&self, search : Vec<usize>) -> PyResult<f64> {
-        let mut p : f64 = 0.;
-        for i in search.iter() {
-            p+= self.state[2*i].norm().powi(2) + self.state[2*i+1].norm().powi(2);
-        }
-        Ok(p)
+    fn get_proba(&self, target : Vec<usize>) -> PyResult<f64> {
+        Ok(self.proba(&target))
     }
 
-    fn carac(&mut self, c : Coin, s : &mut Scattering, r : Vec<Vec<Cplx>>, search : Vec<usize>, waiting : i32) -> PyResult<(usize,f64)> {
-        let mut current : f64 = self.get_proba(search.clone()).unwrap();
+    fn carac(&mut self, pipeline : Vec<OperationWrapper>, measure : Vec<usize>, waiting : i32) -> PyResult<(usize,f64)> {
+        let mut current : f64 = self.proba(&measure);
         let mut min : f64 = current;
         let mut max : f64 = current;
         let mut pos : usize = 0;
@@ -358,9 +402,9 @@ impl QWFast {
         self.reset();
 
         loop {
-            self.run(c.clone(),s,r.clone(),1,search.clone());
+            self.apply(&pipeline);
             steps+=1;
-            current = self.get_proba(search.clone()).unwrap();
+            current = self.proba(&measure);
             if waiting <= 0 && current < (max+min)/2. {
                 break;
             }
