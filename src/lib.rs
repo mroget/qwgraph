@@ -1,3 +1,5 @@
+use std::io::Write;
+use std::io;
 use pyo3::prelude::*;
 use num_complex;
 use rayon::prelude::*;
@@ -430,6 +432,8 @@ fn qwgraph(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<QWFast>()?;
     m.add_class::<Coin>()?;
     m.add_class::<Scattering>()?;
+    m.add_class::<UnitaryOp>()?;
+    m.add_class::<OperationWrapper>()?;
     m.add_function(wrap_pyfunction!(_get_indices_around_nodes, m)?)?;
     Ok(())
 }
