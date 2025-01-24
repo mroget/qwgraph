@@ -62,6 +62,7 @@ class Instruction(Enum):
 class PipeLine(list): 
     """ Pipeline class for QWSearch
     This class is used to give instruction to the QWSearch. It inherits from list and is basically a list of instructions to the walk.
+    Instructions are executed by the walk in order.
     There are four types of instruction:
         - Instruction.SCATTERING : An operation around the nodes.
         - Instruction.COIN : An operation on the edges.
@@ -139,7 +140,7 @@ class PipeLine(list):
             elif dic["mode"]=="degree":
                 data = [[] for i in range(max(qw._degrees)+1)]
                 for i in qw._degrees:
-                    data[i] = dic["scattering"][i]
+                    data[i] = dic["scattering"](i)
 
                 Scatter.set_type(3, data)
 
@@ -153,6 +154,20 @@ class PipeLine(list):
         return [self._read_entry(dic,qw) for dic in self]
 
     def add_unitary(self, targets, unitary, addressing_type=None, name=None):
+        """ Add an arbitrary unitary application to the pipeline.
+        Args:
+            targets (list): The list of targets.
+            unitary (np.array): The matrix of the unitary operator.
+            addressing_type (AddressingType, optional): The way the targets are addressed (edges, nodes, virtual edges or amplitudes). If set to None, this parameter will take the value of the class attribute addressing_type.
+            name (str, optional): A name of the operation. As no effect on the dynamic but shows when printing the pipeline.
+        
+        Examples:
+            >>> pipeline = PipeLine()
+            >>> pipeline.add_unitary([(0,1)], -np.eye(2), addressing_type=AddressingType.EDGE, name="oracle on an edge")
+            >>> pipeline.add_unitary([0], -np.eye(2), addressing_type=AddressingType.NODE, name="oracle around a node")
+            >>> print(pipeline)
+            UNITARY(oracle on an edge) -> UNITARY(oracle around a node)
+        """
         dic = {"instruction":Instruction.UNITARY, "targets":targets, "unitary":unitary, "addressing_type":addressing_type}
         if name != None:
             dic["name"] = str(name)
@@ -161,6 +176,19 @@ class PipeLine(list):
         self.append(dic)
 
     def add_proba(self, targets, addressing_type=None, name=None):
+        """ Add an extraction of the probability of being on one of the targets.
+        Args:
+            targets (list): The list of targets.
+            addressing_type (AddressingType, optional): The way the target is addressed (edges, nodes, virtual edges or amplitudes). If set to None, this parameter will take the value of the class attribute addressing_type.
+            name (str, optional): A name of the operation. As no effect on the dynamic but shows when printing the pipeline.
+        
+        Examples:
+            >>> pipeline = PipeLine()
+            >>> pipeline.add_proba([(0,1)], addressing_type=AddressingType.EDGE, name="proba on an edge")
+            >>> pipeline.add_proba([0], addressing_type=AddressingType.NODE, name="proba around a node")
+            >>> print(pipeline)
+            PROBA(proba on an edge) -> PROBA(proba around a node)
+        """
         dic = {"instruction":Instruction.PROBA, "targets":targets, "addressing_type":addressing_type}
         if name != None:
             dic["name"] = str(name)
@@ -169,24 +197,79 @@ class PipeLine(list):
         self.append(dic)
 
     def add_coin(self, coin, name=None):
+        """ Add a coin operation to the pipeline.
+        Coin operations are operations on the edges.
+        Args:
+            coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.
+            name (str, optional): A name of the operation. As no effect on the dynamic but shows when printing the pipeline.
+        
+        Examples:
+            >>> qw = QWSearch(nx.complete_graph(4), True)
+            >>> pipeline = PipeLine()
+            >>> pipeline.add_coin(np.eye(2), name="identity coin")
+            >>> pipeline.add_coin({e : np.eye(2) * np.exp(1j * np.random.random()) for e in qw.edges()}, name="coin different for each edge")
+            >>> print(pipeline)
+            COIN(identity coin) -> COIN(coin different for each edge)
+        """
         dic = {"instruction":Instruction.COIN, "coin":coin}
         if name != None:
             dic["name"] = str(name)
         self.append(dic)
 
     def add_scattering(self, scattering, name=None):
+        """ Add a scattering operation to the pipeline.
+        Scattering operations are operations around the nodes.
+        Args:
+            scattering (str): "cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.
+            name (str, optional): A name of the operation. As no effect on the dynamic but shows when printing the pipeline.
+        
+        Examples:
+            >>> pipeline = PipeLine()
+            >>> pipeline.add_scattering("grover", name="Grover diffusion")
+            >>> pipeline.add_scattering("cycle", name="cycle")
+            >>> print(pipeline)
+            SCATTERING(Grover diffusion) -> SCATTERING(cycle)
+        """
         dic = {"instruction":Instruction.SCATTERING, "scattering":scattering, "mode":"global"}
         if name != None:
             dic["name"] = str(name)
         self.append(dic)
 
     def add_scattering_by_node(self, scattering, name=None):
+        """ Add a different scattering operation for each node to the pipeline.
+        Scattering operations are operations around the nodes.
+        Args:
+            scattering (dict): A dictionnary {node : unitary} associating to each node its scattering operator.
+            name (str, optional): A name of the operation. As no effect on the dynamic but shows when printing the pipeline.
+        
+        Examples:
+            >>> qw = QWSearch(nx.balanced_tree(3,1), True)
+            >>> grover = lambda d: (2/d)*np.ones((d,d)) - np.eye(d)
+            >>> pipeline = PipeLine()
+            >>> pipeline.add_scattering_by_node({u : grover(qw.degree(u)) for u in qw.nodes()}, name="personalised scattering") # Grover on everyone
+            >>> print(pipeline)
+            SCATTERING(personalised scattering)
+        """
         dic = {"instruction":Instruction.SCATTERING, "scattering":scattering, "mode":"node"}
         if name != None:
             dic["name"] = str(name)
         self.append(dic)
 
     def add_scattering_by_degree(self, scattering, name=None):
+        """ Add a different scattering operation for each degree to the pipeline.
+        Scattering operations are operations around the nodes.
+        Args:
+            scattering (function): A function associating for each possible degree the coresponding scattering operator.
+            name (str, optional): A name of the operation. As no effect on the dynamic but shows when printing the pipeline.
+        
+        Examples:
+            >>> qw = QWSearch(nx.balanced_tree(3,1), True)
+            >>> grover = lambda d: (2/d)*np.ones((d,d)) - np.eye(d)
+            >>> pipeline = PipeLine()
+            >>> pipeline.add_scattering_by_degree(grover, name="personalised scattering") # Grover on everyone
+            >>> print(pipeline)
+            SCATTERING(personalised scattering)
+        """
         dic = {"instruction":Instruction.SCATTERING, "scattering":scattering, "mode":"degree"}
         if name != None:
             dic["name"] = str(name)
@@ -365,6 +448,9 @@ class QWSearch:
         """
         return deepcopy(self._edges)
 
+    def degree(self, node):
+        return len(self._G[node])
+
     def graph(self):
         """ Returns the underlying graph.
 
@@ -400,7 +486,7 @@ class QWSearch:
         return deepcopy(self._virtual_edges)
 
 
-    def degrees(self):
+    def list_degrees(self):
         """ Returns a dictionnary that associates its virtual edge to each node. This dictionnary is empty when the object has been built with `search_nodes==False` since there are no virtual edges in that case.
 
         Returns:
