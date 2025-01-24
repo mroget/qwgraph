@@ -46,7 +46,7 @@ class PipeLine(list):
     Once this is done, you can separatly create or load a pipeline and run it on the qw. The pipeline will apply every instructions in itself repeat times.
     """
     def __init__(self, *args, measure=[], addressing_type=AddressingType.EDGE):
-        list.__init__(*args)
+        super().__init__(*args)
         self.measure = measure
         self.addressing_type=addressing_type
     def __repr__(self):
@@ -54,6 +54,13 @@ class PipeLine(list):
         if len(self.measure) != 0:
             l.append("PROBA({})".format(str(self.measure)))
         return " -> ".join(l)
+
+    def __add__(self, other):
+        l = list(self)+list(other)
+        return PipeLine(l, measure=self.measure, addressing_type=self.addressing_type)
+    def __mul__(self,other):
+        l = list(self)*other
+        return PipeLine(l, measure=self.measure, addressing_type=self.addressing_type)
 
     def _read_entry(self, dic, qw):
         op = qwfast.OperationWrapper()
