@@ -1,1 +1,1 @@
-from qwgraph.qwsearch import QWSearch, Scattering, UnitaryOp, Operation, AddressingType
+from qwgraph.qwsearch import QWSearch, PipeLine, AddressingType, Instruction

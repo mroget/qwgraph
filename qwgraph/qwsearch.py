@@ -21,11 +21,6 @@ import sys
 from qwgraph import qwgraph as qwfast
 
 
-class Polarity(Enum):
-    Minus = 0
-    Plus = 1
-
-
 class AddressingType(Enum):
     EDGE = 0 # (u,v)
     VIRTUAL_EDGE = 1 # u
@@ -33,62 +28,118 @@ class AddressingType(Enum):
     AMPLITUDE = 3 # (u,v)
 
 
+class Instruction(Enum):
+    SCATTERING = 0
+    COIN = 1
+    UNITARY = 2
 
-class Scattering:
-    def __init__(self, data, per_node=True):
-        self.data = data
-        self.per_node = per_node
-
-    def _read_nodes(self, nodes):
-        ret = [[] for i in nodes]
-        if type(self.data) == type(list()):
-            return self.data
-
-        for i in range(len(nodes)):
-            if type(self.data) == dict: # Dictionnary
-                ret[i] = self.data[nodes[i]]
-            else: # Function
-                ret[i] = self.data(nodes[i])
-        return ret
-
-    def _read_degree(self, degree):
-        ret = [[] for i in range(max(degree)+1)]
-        if type(self.data) == type(list()):
-            return self.data
-
-        for i in degree:
-            if type(self.data) == dict: # Dictionnary
-                ret[i] = self.data[i]
-            else: # Function
-                ret[i] = self.data(i)
-        return ret
-
-    def _get_scatter(self, nodes, deg_max):
-        Scatter = qwfast.Scattering()
-        if self.per_node:
-            Scatter.set_type(3, self._read_nodes(nodes))
-        else:
-            Scatter.set_type(2, self._read_degree(deg_max))
-        return Scatter
-
-
-class UnitaryOp:
-    def __init__(self, target, U, _type=AddressingType.EDGE):
-        self.U = U
-        self._type = _type
-        self.target = target
-
-
-class Operation:
-    def __init__(self, _type, obj, name = ""):
-        assert(_type in ["scattering", "coin", "unitary"])
-        self._type = _type
-        self.obj = obj
-        self.name = name
+class PipeLine(list): 
+    """ Pipeline class for QWSearch
+    This class is used to give instruction to the QWSearch. It inherits from list and is basically a list of instructions to the walk.
+    You can give 5 different types of instruction to the walk :
+        - (Instruction.SCATTER, {"ax" : ax}) : Scattering along the ax axis (1 for the first axis, 2 for the second , ...).
+        - (Instruction.ORACLE, {"marked" : marked}) : Apply the oracle. marked is the list of the marked elements.
+        - (Instruction.COIN, {"U":U,"name":name}) : Apply the coin operation U on the coin otimes dataset otimes anscillary space. The "name" parameter is optionnal and only impact how the pipeline object is displayed.
+        - (Instruction.OPERATOR, {"U":U,"registers" : l, "name":name}) : Apply the operator U on registers l. name is optionnal.
+        - (Instruction.FIX, {}) : Check if the internal state of the walk is unitary. If the error is less than 1e-8, it is probably a numerical error and the vector is normalized. If the error is greater than 1e-8 an error is raised.
+    This class is intended to be use as a pipeline and manager for a QW. You should first create a QWSearch by specifying the size of the registers and change the internal state according to your need.
+    Once this is done, you can separatly create or load a pipeline and run it on the qw. The pipeline will apply every instructions in itself repeat times.
+    """
+    def __init__(self, *args, measure=[], addressing_type=AddressingType.EDGE):
+        list.__init__(*args)
+        self.measure = measure
+        self.addressing_type=addressing_type
     def __repr__(self):
-        return str(self)
-    def __str__(self):
-        return "{}({})".format(self.name, self._type)
+        l = [str(dic["instruction"].name) if "name" not in dic or dic["name"] == None else "{}({})".format(dic["instruction"].name,dic["name"]) for dic in self]
+        if len(self.measure) != 0:
+            l.append("PROBA({})".format(str(self.measure)))
+        return " -> ".join(l)
+
+    def _read_entry(self, dic, qw):
+        op = qwfast.OperationWrapper()
+        if dic["instruction"] == Instruction.COIN:
+            Coin = qwfast.Coin()
+            if type(dic["coin"]) == type(dict()): # Dictionnary
+                Coin.set_micro([dic["coin"][e] for e in qw._edges])
+            elif len(np.shape(dic["coin"])) == 2: # One matrix
+                Coin.set_macro(dic["coin"])
+            else:
+                raise "Wrong type or dimension for the coin"
+            op.set_to_coin(Coin)
+            return op
+
+        if dic["instruction"] == Instruction.UNITARY:
+            pos = np.reshape([qw._get_index(i, dic["addressing_type"]) for i in dic["targets"]], (-1,))
+            Unitary = qwfast.UnitaryOp(pos, dic["unitary"])
+            op.set_to_unitary(Unitary)
+            return op
+
+
+        if dic["instruction"] == Instruction.SCATTERING:
+            Scatter = qwfast.Scattering()
+            if dic["mode"]=="global":
+                if dic["scattering"] == "cycle":
+                    Scatter.set_type(0, [])
+                elif dic["scattering"] == "grover":
+                    Scatter.set_type(1, [])
+                else:
+                    raise "Scattering not recognized"
+            elif dic["mode"]=="node":
+                data = [[] for i in qw._nodes]
+                for i in range(len(qw._nodes)):
+                    data[i] = dic["scattering"][qw._nodes[i]]
+
+                Scatter.set_type(3, data)
+
+            elif dic["mode"]=="degree":
+                data = [[] for i in range(max(qw._degrees)+1)]
+                for i in qw._degrees:
+                    data[i] = dic["scattering"][i]
+
+                Scatter.set_type(3, data)
+
+            else:
+                raise "Wrong argument for the scattering"
+            op.set_to_scattering(Scatter)
+            return op
+
+
+    def _read(self, qw):
+        return [self._read_entry(dic,qw) for dic in self]
+
+    def add_unitary(self, targets, unitary, addressing_type=None, name=None):
+        dic = {"instruction":Instruction.UNITARY, "targets":targets, "unitary":unitary, "addressing_type":addressing_type}
+        if name != None:
+            dic["name"] = str(name)
+        if addressing_type == None:
+            dic["addressing_type"] = self.addressing_type
+        self.append(dic)
+
+    def add_coin(self, coin, name=None):
+        dic = {"instruction":Instruction.COIN, "coin":coin}
+        if name != None:
+            dic["name"] = str(name)
+        self.append(dic)
+
+    def add_scattering(self, scattering, name=None):
+        dic = {"instruction":Instruction.SCATTERING, "scattering":scattering, "mode":"global"}
+        if name != None:
+            dic["name"] = str(name)
+        self.append(dic)
+
+    def add_scattering_by_node(self, scattering, name=None):
+        dic = {"instruction":Instruction.SCATTERING, "scattering":scattering, "mode":"node"}
+        if name != None:
+            dic["name"] = str(name)
+        self.append(dic)
+
+    def add_scattering_by_degree(self, scattering, name=None):
+        dic = {"instruction":Instruction.SCATTERING, "scattering":scattering, "mode":"degree"}
+        if name != None:
+            dic["name"] = str(name)
+        self.append(dic)
+
+
 
 
 
@@ -119,63 +170,64 @@ class QWSearch:
     ######################
     ### Init functions ###
     ######################
-    def __init__(self, graph, search_nodes=False):
-        self.__search_nodes = search_nodes
+    def __init__(self, graph, starify=False):
+        self._starified = starify
         
-        self.__G = deepcopy(graph)
+        self._G = deepcopy(graph)
         
-        if self.__search_nodes:
-            self.__virtual_edges = self.__starify()
+        if self._starified:
+            self._virtual_edges = self._starify()
         else:
-            self.__virtual_edges = {}
+            self._virtual_edges = {}
         
-        self.__edges = list(self.__G.edges()) # List of edges
-        self.__nodes = list(self.__G.nodes()) # List of nodes
-        self.__E = len(self.__edges) # Number of edges
-        self.__N = len(self.__nodes) # Number of nodes
-        self.__index = {self.__edges[i]:i for i in range(len(self.__edges))} # Index for edges
-        self.__nodes_index = {self.__nodes[i]:i  for i in range(self.__N)} # Index for nodes
+        self._edges = list(self._G.edges()) # List of edges
+        self._nodes = list(self._G.nodes()) # List of nodes
+        self._E = len(self._edges) # Number of edges
+        self._N = len(self._nodes) # Number of nodes
+        self._degrees = list(set(list(dict(nx.degree(self._G)).values())))
+        self._index = {self._edges[i]:i for i in range(len(self._edges))} # Index for edges
+        self._nodes_index = {self._nodes[i]:i  for i in range(self._N)} # Index for nodes
 
-        if nx.bipartite.is_bipartite(self.__G):
-            color = nx.bipartite.color(self.__G) # Coloring
+        if nx.bipartite.is_bipartite(self._G):
+            color = nx.bipartite.color(self._G) # Coloring
         else:
-            color = {self.__nodes[i]:i for i in range(len(self.__nodes))} # Coloring
+            color = {self._nodes[i]:i for i in range(len(self._nodes))} # Coloring
 
-        self.__polarity = {}
-        for (u,v) in self.__edges:
-            self.__polarity[(u,v)] = ("-" if color[u]<color[v] else "+")
-            self.__polarity[(v,u)] = ("+" if color[u]<color[v] else "-")
+        self._polarity = {}
+        for (u,v) in self._edges:
+            self._polarity[(u,v)] = ("-" if color[u]<color[v] else "+")
+            self._polarity[(v,u)] = ("+" if color[u]<color[v] else "-")
 
-        self.__initalize_rust_object()        
+        self._initalize_rust_object()        
         
 
-    def __initalize_rust_object(self):
-        self.__amplitude_labels = [""]*2*self.__E
+    def _initalize_rust_object(self):
+        self._amplitude_labels = [""]*2*self._E
         wiring = [] # For any amplitude self.state[i], says to which node it is connected. Important for the scattering.
         k = 0
-        for (i,j) in self.__edges:
+        for (i,j) in self._edges:
             edge_label = str(i) + "," + str(j)
-            if self.__polarity[(i,j)]=="-":
-                wiring.append(self.__nodes_index[i])
-                wiring.append(self.__nodes_index[j])
+            if self._polarity[(i,j)]=="-":
+                wiring.append(self._nodes_index[i])
+                wiring.append(self._nodes_index[j])
             else:
-                wiring.append(self.__nodes_index[j])
-                wiring.append(self.__nodes_index[i])
-            self.__amplitude_labels[k] = "$\psi_{"+edge_label+"}^-$"
-            self.__amplitude_labels[k+1] = "$\psi_{"+edge_label+"}^+$"
+                wiring.append(self._nodes_index[j])
+                wiring.append(self._nodes_index[i])
+            self._amplitude_labels[k] = "$\psi_{"+edge_label+"}^-$"
+            self._amplitude_labels[k+1] = "$\psi_{"+edge_label+"}^+$"
             k+=2
         
 
-        self.__qwf = qwfast.QWFast(wiring,self.__N,self.__E)
-        self.__around_nodes_indices = qwfast._get_indices_around_nodes(self.__E,self.__N,wiring)
+        self._qwf = qwfast.QWFast(wiring,self._N,self._E)
+        self._around_nodes_indices = qwfast._get_indices_around_nodes(self._E,self._N,wiring)
 
         self.reset()
 
-    def __starify(self):
-        nodes = copy.deepcopy(self.__G.nodes())
+    def _starify(self):
+        nodes = copy.deepcopy(self._G.nodes())
         s = {}
         for i in nodes:
-            self.__G.add_edge(i,f"new_node{i}")
+            self._G.add_edge(i,f"new_node{i}")
             s[i] = (i,f"new_node{i}")
         return s
 
@@ -203,7 +255,7 @@ class QWSearch:
             [0, 1, 2, 3]
             
         """
-        return deepcopy(self.__nodes)
+        return deepcopy(self._nodes)
 
     def edges(self):
         """ Returns the list of edges. Convenient when declaring which edges are marked.
@@ -217,7 +269,7 @@ class QWSearch:
             [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
             
         """
-        return deepcopy(self.__edges)
+        return deepcopy(self._edges)
 
     def graph(self):
         """ Returns the underlying graph.
@@ -231,7 +283,7 @@ class QWSearch:
             <networkx.classes.graph.Graph at 0x7bd045d53c70>
             
         """
-        return deepcopy(self.__G)
+        return deepcopy(self._G)
 
     def virtual_edges(self):
         """ Returns a dictionnary that associates its virtual edge to each node. This dictionnary is empty when the object has been built with `search_nodes==False` since there are no virtual edges in that case.
@@ -251,8 +303,28 @@ class QWSearch:
              3: (3, 'new_node3')}
             
         """
-        return deepcopy(self.__virtual_edges)
+        return deepcopy(self._virtual_edges)
 
+
+    def degrees(self):
+        """ Returns a dictionnary that associates its virtual edge to each node. This dictionnary is empty when the object has been built with `search_nodes==False` since there are no virtual edges in that case.
+
+        Returns:
+            (dict): A dictionnary {node: edge} that associates each node to its virtual edge.
+
+        Examples:
+            >>> qw = QWSearch(nx.complete_graph(4))
+            >>> qw.virtual_edges()
+            {}
+            >>> qw = QWSearch(nx.complete_graph(4),search_nodes=True)
+            >>> qw.virtual_edges()
+            {0: (0, 'new_node0'),
+             1: (1, 'new_node1'),
+             2: (2, 'new_node2'),
+             3: (3, 'new_node3')}
+            
+        """
+        return deepcopy(self._degrees)
 
 
 
@@ -277,40 +349,40 @@ class QWSearch:
 
         if b:
             for ((u,v),val) in polarity:
-                self.__polarity[(u,v)] = val
-                self.__polarity[(v,u)] = opp(val)
-            self.__initalize_rust_object() 
+                self._polarity[(u,v)] = val
+                self._polarity[(v,u)] = opp(val)
+            self._initalize_rust_object() 
         else:
             print("Warning: Polarity values not valid !", file=sys.stderr)
 
-    def __get_index(self, pos, _type=AddressingType.EDGE):
+    def _get_index(self, pos, _type=AddressingType.EDGE):
         if _type == AddressingType.EDGE:
-            index = self.__index[pos]
+            index = self._index[pos]
             return [2*index, 2*index+1]
         if _type == AddressingType.VIRTUAL_EDGE:
-            #assert(self.__search_nodes and pos in self.__virtual_edges.keys())
-            edge = self.__virtual_edges[pos]
-            index = self.__index[edge]
+            #assert(self._search_nodes and pos in self._virtual_edges.keys())
+            edge = self._virtual_edges[pos]
+            index = self._index[edge]
             return [2*index, 2*index+1]
         if _type == AddressingType.NODE:
-            return deepcopy(self.__around_nodes_indices[self.__nodes_index[pos]])
+            return deepcopy(self._around_nodes_indices[self._nodes_index[pos]])
         if _type == AddressingType.AMPLITUDE:
             (u,v) = pos
-            if (u,v) in self.__index:
+            if (u,v) in self._index:
                 edge = (u,v)
             else:
                 edge = (v,u)
-            index = self.__index[edge]
-            return [2*index] if self.__polarity[pos]=="-" else [2*index+1]
+            index = self._index[edge]
+            return [2*index] if self._polarity[pos]=="-" else [2*index+1]
 
 
     def polarity(self, amplitudes):
-        indices = {p:self.__get_index(p,AddressingType.AMPLITUDE)[0] for p in amplitudes}
+        indices = {p:self._get_index(p,AddressingType.AMPLITUDE)[0] for p in amplitudes}
         return {p:"-" if indices[p]%2==0 else "+" for p in amplitudes}
 
     def label(self, positions, _type=AddressingType.EDGE):
-        indices = {p:[i for i in self.__get_index(p,_type)] for p in positions}
-        return {p:[self.__amplitude_labels[i] for i in indices[p]] for p in positions}
+        indices = {p:[i for i in self._get_index(p,_type)] for p in positions}
+        return {p:[self._amplitude_labels[i] for i in indices[p]] for p in positions}
 
 
     def state(self, positions, _type=AddressingType.EDGE):
@@ -335,8 +407,8 @@ class QWSearch:
             {(0, 1): array([0.35355339+0.j, 0.35355339+0.j]),
              (0, 3): array([0.35355339+0.j, 0.35355339+0.j])}
         """
-        indices = {p:[i for i in self.__get_index(p,_type)] for p in positions}
-        return {p:np.array([self.__qwf.state[i] for i in indices[p]],dtype=complex) for p in positions}
+        indices = {p:[i for i in self._get_index(p,_type)] for p in positions}
+        return {p:np.array([self._qwf.state[i] for i in indices[p]],dtype=complex) for p in positions}
 
     def set_state(self, new_state):
         """ Change the inner state (i.e. the amplitudes for every edges).
@@ -362,13 +434,13 @@ class QWSearch:
              (2, 3): array([0.4472136+0.j       , 0.       +0.2236068j])}
         """
         s = np.sqrt(sum([abs(new_state[e][0])**2 + abs(new_state[e][1])**2 for e in new_state]))
-        state = np.array([0]*2*self.__E,dtype=complex)
-        for i in range(self.__E):
-            state[2*i] = new_state[self.__edges[i]][0]/s
-            state[2*i+1] = new_state[self.__edges[i]][1]/s
-        self.__qwf.state = state
+        state = np.array([0]*2*self._E,dtype=complex)
+        for i in range(self._E):
+            state[2*i] = new_state[self._edges[i]][0]/s
+            state[2*i+1] = new_state[self._edges[i]][1]/s
+        self._qwf.state = state
 
-    def proba(self, searched):
+    def proba(self, searched, _type=AddressingType.EDGE):
         """ Returns the probability to measure on of the searched element.
 
         Args:   
@@ -386,7 +458,8 @@ class QWSearch:
             >>> qw.get_proba(qw.edges())
             1.
         """
-        return self.__qwf.get_proba([self.__get_edge_index(i)[1] for i in searched])
+        indices = {p:[i for i in self._get_index(p,_type)] for p in searched}
+        return {p:self._qwf.get_proba(indices[p]) for p in searched}
 
     def reset(self):
         """ Reset the state to a diagonal one and reset the current step to 0.
@@ -413,75 +486,9 @@ class QWSearch:
              (2, 3): array([0.35355339+0.j, 0.35355339+0.j])}
 
         """
-        self.__qwf.reset()
+        self._qwf.reset()
 
 
-
-
-
-
-
-
-
-
-    #######################
-    ### Read operations ###
-    #######################
-    def _read_coin(self, C):
-        Coin = qwfast.Coin()
-        if type(C) == type(dict()): # Dictionnary
-            Coin.set_micro([C[e] for e in self.edges()])
-        elif len(np.shape(C)) == 2: # One matrix
-            Coin.set_macro(C)
-        else:
-            raise "Wrong type or dimension for the coin"
-        return Coin
-
-
-    def _read_scatter(self, S):
-        Scatter = qwfast.Scattering()
-        if S == "cycle":
-            Scatter.set_type(0, [])
-        elif S == "grover":
-            Scatter.set_type(1, [])
-        elif type(S) == type(Scattering([])):
-            Scatter = S._get_scatter(self.__nodes, list(set(list(dict(nx.degree(self.__G)).values()))))
-
-        else:
-            raise "Wrong argument for the scattering"
-        return Scatter
-
-    def _read_unitary(self, U):
-        pos = np.reshape([self.__get_index(i, U._type) for i in U.target], (-1,))
-        Unitary = qwfast.UnitaryOp(pos, U.U)
-        return Unitary
-
-    def _read_operation(self, op):
-        ret = qwfast.OperationWrapper()
-        if op._type == "scattering":
-            ret.set_to_scattering(self._read_scatter(op.obj))
-        elif op._type == "coin":
-            ret.set_to_coin(self._read_coin(op.obj))
-        elif op._type == "unitary":
-            ret.set_to_unitary(self._read_unitary(op.obj))
-        else:
-            raise f"Wrong type for operation {op}"
-        return ret
-
-    def read_pipeline(self, pipeline):
-        l = []
-        for op in pipeline:
-            l.append(self._read_operation(op))
-        return l
-
-
-
-
-
-
-
-
-    
 
 
 
@@ -507,7 +514,13 @@ class QWSearch:
             >>> [np.round(qw.get_proba([e]),3) for e in qw.edges()]
             [0.0, 0.25, 0.625, 0.0, 0.125, 0.0]
         """
-        self.__qwf.run(self.read_pipeline(pipeline),ticks)
+
+        if pipeline.measure == None:
+            self._qwf.run(pipeline._read(self),ticks)
+        else:
+            indices = np.reshape([self._get_index(i, pipeline.addressing_type) for i in pipeline.measure], (-1,))
+            p = self._qwf.search(pipeline._read(self),ticks,indices)
+            return p
 
 
     def run_with_trace(self, pipeline, ticks=1):
@@ -529,65 +542,11 @@ class QWSearch:
             >>> [np.round(qw.get_proba([e]),3) for e in qw.edges()]
             [0.0, 0.25, 0.625, 0.0, 0.125, 0.0]
         """
-        l = self.__qwf.run(self.read_pipeline(pipeline),ticks)
+        l = self._qwf.run_with_trace(pipeline._read(self),ticks)
         l = [[i] + l[i] for i in range(len(l))]
-        return pd.DataFrame(l,columns=["steps"] + self.__amplitude_labels)
+        return pd.DataFrame(l,columns=["steps"] + self._amplitude_labels)
 
-
-
-    def search(self, pipeline, searched=[], ticks=1, _type=AddressingType.EDGE):
-        """ Run the simulation with coin `C`, oracle `R` for ticks steps and with searched elements `searched`.
-
-        This method does the same thing than `run`, but returns the probability of success at every steps. For every marked element m, the probability of measuring m at every step is returned.
-        
-        Args:
-            C (numpy.array of complex): The coin defined as a 2x2 numpy array of complex.
-            R (numpy.array of complex): The oracle defined as a 2x2 numpy array of complex.
-            searched (list, optional): The list of marked elements. "elements" here means nodes if search_nodes was true when building the object, and means edges otherwise.
-            ticks (int, optional): The number of time steps.
-            progress (bool, optional): If True, a tqdm progress bar will be displayed.
-
-        Returns:
-            (pandas.DataFrame): A dataframe containing probabilities fo measuring marked positions. The column "step" denote the step number (or epoch) of the dynamic. For each marked element `m`, the column `m` denotes the probability of measuring `m` at any given step. The column `p_succ` denotes the probability of measuring any marked elements and is essentially the sum of all the other colmuns excepted "step".
-
-        Examples:
-            >>> qw = QWSearch(nx.complete_graph(100))
-            >>> print(qw.search(coins.H,coins.I,searched=qw.edges()[0:4],ticks=10))
-                step    p_succ    (0, 1)    (0, 2)    (0, 3)    (0, 4)
-            0      0  0.000808  0.000202  0.000202  0.000202  0.000202
-            1      1  0.003880  0.000994  0.000978  0.000962  0.000946
-            2      2  0.009113  0.002467  0.002337  0.002214  0.002095
-            3      3  0.013043  0.003875  0.003441  0.003044  0.002683
-            4      4  0.013292  0.004433  0.003617  0.002918  0.002324
-            5      5  0.010471  0.003820  0.002892  0.002162  0.001596
-            6      6  0.007487  0.002620  0.002011  0.001579  0.001277
-            7      7  0.005653  0.001645  0.001455  0.001324  0.001228
-            8      8  0.004657  0.001321  0.001212  0.001107  0.001017
-            9      9  0.004065  0.001494  0.001105  0.000824  0.000641
-            10    10  0.004440  0.001913  0.001226  0.000784  0.000517
-            >>> qw = QWSearch(nx.complete_graph(100),search_nodes=True)
-            >>> print(qw.search(coins.H,coins.I,searched=qw.nodes()[0:4],ticks=10))
-                step    p_succ         0         1         2         3
-            0      0  0.000792  0.000198  0.000198  0.000198  0.000198
-            1      1  0.000746  0.000198  0.000190  0.000182  0.000175
-            2      2  0.003557  0.000978  0.000917  0.000859  0.000803
-            3      3  0.000890  0.000280  0.000237  0.000201  0.000172
-            4      4  0.000097  0.000023  0.000020  0.000023  0.000031
-            5      5  0.000320  0.000072  0.000079  0.000084  0.000086
-            6      6  0.004178  0.001147  0.001087  0.001014  0.000930
-            7      7  0.002613  0.000864  0.000713  0.000577  0.000459
-            8      8  0.002197  0.000817  0.000607  0.000446  0.000327
-            9      9  0.002605  0.000897  0.000695  0.000554  0.000458
-            10    10  0.000085  0.000036  0.000022  0.000015  0.000012
-
-        """
-
-        indices = np.reshape([self.__get_index(i, _type) for i in searched], (-1,))
-        p = self.__qwf.search(self.read_pipeline(pipeline),ticks,indices)
-
-        return p
-
-    def get_unitary(self, pipeline, searched=[], dataframe=False, progress=False, _type=AddressingType.EDGE):
+    def get_unitary(self, pipeline, dataframe=False, progress=False):
         """ For a given coin, oracle and set of searched edges, compute and return the unitary U coresponding to one step of the QW.
 
         This method **do not** change the state of the QW.
@@ -618,21 +577,21 @@ class QWSearch:
                    [ 0.        +0.j,  0.        +0.j,  0.70710678+0.j,
                     -0.70710678+0.j,  0.        +0.j,  0.        +0.j]])
         """
-        old_state = copy.deepcopy(self.__qwf.state)
+        old_state = copy.deepcopy(self._qwf.state)
         U = []
-        for i in (tqdm(range(2*self.__E),ncols=100)) if progress else (range(2*self.__E)):
-            self.__qwf.state = np.array([int(i==j) for j in range(2*self.__E)],dtype=complex)
-            self.run(pipeline, ticks=1, searched=searched, _type=_type)
-            U.append(copy.deepcopy(self.__qwf.state))
-        self.__qwf.state = old_state
+        for i in (tqdm(range(2*self._E),ncols=100)) if progress else (range(2*self._E)):
+            self._qwf.state = np.array([int(i==j) for j in range(2*self._E)],dtype=complex)
+            self.run(pipeline, ticks=1)
+            U.append(copy.deepcopy(self._qwf.state))
+        self._qwf.state = old_state
         U = np.array(U,dtype=complex).transpose()
         if dataframe:
-            df = pd.DataFrame(U, index=self.__amplitude_labels, columns=self.__amplitude_labels)
+            df = pd.DataFrame(U, index=self._amplitude_labels, columns=self._amplitude_labels)
             return df
         else:
             return U
 
-    def get_T_P(self, pipeline, searched=[], waiting=10, _type=AddressingType.EDGE):
+    def get_T_P(self, pipeline, waiting=10):
         """ Computes the hitting time and probability of success for a given QW. 
 
         The waiting parameter is used to accumalate informations about the signal (recommended to be at least 10).
@@ -661,7 +620,7 @@ class QWSearch:
         """
 
         self.reset()
-        indices = np.reshape([self.__get_index(i, _type) for i in searched], (-1,))
-        ret = self.__qwf.carac(self.read_pipeline(pipeline),indices,waiting)
+        indices = np.reshape([self._get_index(i, pipeline.adressing_type) for i in pipeline.measure], (-1,))
+        ret = self._qwf.carac(pipeline._read(self),indices,waiting)
         self.reset()
         return ret
