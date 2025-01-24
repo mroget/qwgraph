@@ -32,6 +32,7 @@ class Instruction(Enum):
     SCATTERING = 0
     COIN = 1
     UNITARY = 2
+    PROBA = 3
 
 class PipeLine(list): 
     """ Pipeline class for QWSearch
@@ -73,6 +74,11 @@ class PipeLine(list):
             else:
                 raise "Wrong type or dimension for the coin"
             op.set_to_coin(Coin)
+            return op
+
+        if dic["instruction"] == Instruction.PROBA:
+            pos = np.reshape([qw._get_index(i, dic["addressing_type"]) for i in dic["targets"]], (-1,))
+            op.set_to_proba(pos)
             return op
 
         if dic["instruction"] == Instruction.UNITARY:
@@ -122,6 +128,14 @@ class PipeLine(list):
             dic["addressing_type"] = self.addressing_type
         self.append(dic)
 
+    def add_proba(self, targets, addressing_type=None, name=None):
+        dic = {"instruction":Instruction.PROBA, "targets":targets, "addressing_type":addressing_type}
+        if name != None:
+            dic["name"] = str(name)
+        if addressing_type == None:
+            dic["addressing_type"] = self.addressing_type
+        self.append(dic)
+
     def add_coin(self, coin, name=None):
         dic = {"instruction":Instruction.COIN, "coin":coin}
         if name != None:
@@ -154,39 +168,39 @@ def walk_on_edges(coin, scattering):
     pipeline.add_scattering(scattering)
     return pipeline
 
-def walk_on_nodes(scattering):
+def walk_on_nodes(scattering, coin=coins.X):
     pipeline = PipeLine([], addressing_type=AddressingType.NODE)
     pipeline.add_scattering(scattering)
-    pipeline.add_coin(coins.X)
+    pipeline.add_coin(coin)
     return pipeline
 
 
 def search_edge(coin, scattering, marked, oracle=None):
-    pipeline = PipeLine([], addressing_type=AddressingType.EDGE, measure=marked)
+    pipeline = PipeLine([], addressing_type=AddressingType.EDGE)
     if oracle == None:
         oracle = -coins.X
     pipeline.add_unitary(marked, oracle, name="Oracle")
-    for op in walk_on_edges(coin, scattering):
-        pipeline.append(op)
+    pipeline = pipeline + walk_on_edges(coin, scattering)
+    pipeline.add_proba(marked)
     return pipeline
 
 def search_virtual_edge(coin, scattering, marked, oracle=None):
-    pipeline = PipeLine([], addressing_type=AddressingType.VIRTUAL_EDGE, measure=marked)
+    pipeline = PipeLine([], addressing_type=AddressingType.VIRTUAL_EDGE)
     if oracle == None:
         oracle = -coins.X
     pipeline.add_unitary(marked, oracle, name="Oracle")
-    for op in walk_on_edges(coin, scattering):
-        pipeline.append(op)
+    pipeline = pipeline + walk_on_edges(coin, scattering)
+    pipeline.add_proba(marked)
     return pipeline
 
-def search_node(scattering, marked, oracle=None):
-    pipeline = PipeLine([], addressing_type=AddressingType.NODE, measure=marked)
+def search_node(scattering, marked, oracle=None, coin=coins.X):
+    pipeline = PipeLine([], addressing_type=AddressingType.NODE)
     if type(oracle) == type(None):
         d = sum([len(qw.graph()[u]) for u in marked])
         oracle = -np.eye(d)
     pipeline.add_unitary(marked, oracle, name="Oracle")
-    for op in walk_on_nodes(scattering):
-        pipeline.append(op)
+    pipeline = pipeline + walk_on_nodes(scattering, coin=coin)
+    pipeline.add_proba(marked)
     return pipeline
 
 
@@ -563,12 +577,7 @@ class QWSearch:
             [0.0, 0.25, 0.625, 0.0, 0.125, 0.0]
         """
 
-        if pipeline.measure == None:
-            self._qwf.run(pipeline._read(self),ticks)
-        else:
-            indices = np.reshape([self._get_index(i, pipeline.addressing_type) for i in pipeline.measure], (-1,))
-            p = self._qwf.search(pipeline._read(self),ticks,indices)
-            return p
+        return self._qwf.run(pipeline._read(self),ticks)
 
 
     def run_with_trace(self, pipeline, ticks=1):

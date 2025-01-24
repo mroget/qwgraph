@@ -255,6 +255,7 @@ enum Operation {
     Scattering(Scattering),
     Coin(Coin),
     Apply(UnitaryOp),
+    Proba(Vec<usize>),
     Nothing,
 }
 impl Operation {
@@ -263,6 +264,7 @@ impl Operation {
             Operation::Scattering(s) => {s.apply(e, n, state, wiring)},
             Operation::Coin(c) => {c.apply(e,state)},
             Operation::Apply(u) => {u.apply(state)},
+            Operation::Proba(_) => {},
             Operation::Nothing => {},
         }
     }
@@ -294,6 +296,9 @@ impl OperationWrapper {
     }
     fn set_to_unitary(&mut self, u : UnitaryOp) {
         self.op = Operation::Apply(u);
+    }
+    fn set_to_proba(&mut self, targets : Vec<usize>) {
+        self.op = Operation::Proba(targets);
     }
 }
 
@@ -338,10 +343,15 @@ impl QWFast {
         p
     }
 
-    fn apply(&mut self, pipeline : &Vec<OperationWrapper>) {
+    fn apply(&mut self, pipeline : &Vec<OperationWrapper>) -> Vec<f64> {
+        let mut ret = Vec::new();
         for op in pipeline.iter() {
-            op.apply(self.e, self.n, &mut self.state, &self.wiring);
+            match &op.op {
+                Operation::Proba(targets) => {ret.push(self.proba(&targets));},
+                _ => {op.apply(self.e, self.n, &mut self.state, &self.wiring);},
+            }
         }
+        ret
     }
 }
 
@@ -361,10 +371,14 @@ impl QWFast {
         Ok(get_perm(self.e,self.n,&self.wiring))
     }
 
-    fn run(&mut self, pipeline : Vec<OperationWrapper>, ticks : usize) {
+    fn run(&mut self, pipeline : Vec<OperationWrapper>, ticks : usize) -> PyResult<Vec<f64>> {
+        let mut ret = Vec::new();
         for _i in 0..ticks {
-            self.apply(&pipeline);
+            for &x in self.apply(&pipeline).iter() {
+                ret.push(x);
+            }
         }
+        Ok(ret)
     }
 
     fn run_with_trace(&mut self, pipeline : Vec<OperationWrapper>, ticks : usize) {
@@ -374,16 +388,6 @@ impl QWFast {
             self.apply(&pipeline);
             ret.push(self.state.clone());
         }
-    }
-
-    fn search(&mut self, pipeline : Vec<OperationWrapper>, ticks : usize, measure : Vec<usize>) -> PyResult<Vec<f64>> {
-        let mut ret = Vec::new();
-        for _i in 0..ticks {
-            ret.push(self.proba(&measure));
-            self.apply(&pipeline);
-        }
-        ret.push(self.proba(&measure));
-        Ok(ret)
     }
 
     fn reset(&mut self) {
