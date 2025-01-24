@@ -21,7 +21,32 @@ import sys
 from qwgraph import qwgraph as qwfast
 
 
+_X = np.array([[0,1],[1,0]],dtype=complex)
+
 class AddressingType(Enum):
+    """ Adressing types used for the QWSearch.
+    In order to mark amplitudes for an oracle, or measure the probability to be somewhere and other similar applications,
+    we need an convenient way to address amplitudes.
+    This class represents the four ways to address amplitudes:
+        - AddressingType.EDGE : Expect edges and assign to each edge its two amplitudes.
+        - AddressingType.VIRTUAL_EDGE : Expect nodes and assign to each node the two amplitudes of the corresponding virtual edge.
+        - AddressingType.NODE : Expect nodes and assign to each node the amplitudes around it.
+        - AddressingType.AMPLITUDES : Expect directed edge and assign to each directed edge its amplitude.
+
+    Examples:
+        >>> qw = QWSearch(nx.complete_graph(4))
+        >>> qw.label([(0,1)], _type = AddressingType.AMPLITUDE)
+        {(0, 1): ['$\\psi_{0,1}^-$']}
+        >>> qw.label([(1,0)], _type = AddressingType.AMPLITUDE)
+        {(1, 0): ['$\\psi_{0,1}^+$']}
+        >>> qw.label([(0,1)], _type = AddressingType.EDGE)
+        {(0, 1): ['$\\psi_{0,1}^-$', '$\\psi_{0,1}^+$']}
+        >>> qw.label([1], _type = AddressingType.NODE)
+        {1: ['$\\psi_{0,1}^+$', '$\\psi_{1,2}^-$', '$\\psi_{1,3}^-$']}
+        >>> qw = QWSearch(nx.complete_graph(4), starify=True)
+        >>> qw.label([1], _type = AddressingType.VIRTUAL_EDGE)
+        {1: ['$\\psi_{1,*1}^-$', '$\\psi_{1,*1}^+$']}
+    """
     EDGE = 0 # (u,v)
     VIRTUAL_EDGE = 1 # u
     NODE = 2 # u
@@ -37,31 +62,35 @@ class Instruction(Enum):
 class PipeLine(list): 
     """ Pipeline class for QWSearch
     This class is used to give instruction to the QWSearch. It inherits from list and is basically a list of instructions to the walk.
-    You can give 5 different types of instruction to the walk :
-        - (Instruction.SCATTER, {"ax" : ax}) : Scattering along the ax axis (1 for the first axis, 2 for the second , ...).
-        - (Instruction.ORACLE, {"marked" : marked}) : Apply the oracle. marked is the list of the marked elements.
-        - (Instruction.COIN, {"U":U,"name":name}) : Apply the coin operation U on the coin otimes dataset otimes anscillary space. The "name" parameter is optionnal and only impact how the pipeline object is displayed.
-        - (Instruction.OPERATOR, {"U":U,"registers" : l, "name":name}) : Apply the operator U on registers l. name is optionnal.
-        - (Instruction.FIX, {}) : Check if the internal state of the walk is unitary. If the error is less than 1e-8, it is probably a numerical error and the vector is normalized. If the error is greater than 1e-8 an error is raised.
-    This class is intended to be use as a pipeline and manager for a QW. You should first create a QWSearch by specifying the size of the registers and change the internal state according to your need.
-    Once this is done, you can separatly create or load a pipeline and run it on the qw. The pipeline will apply every instructions in itself repeat times.
+    There are four types of instruction:
+        - Instruction.SCATTERING : An operation around the nodes.
+        - Instruction.COIN : An operation on the edges.
+        - Instruction.UNITARY : An operation on arbitrary amplitudes.
+        - Instruction.PROBA : An instruction to extract the proba of being at some positions.
+    Addition between pipelines and multiplication by an integer are implemented.
+
+    Attributes:
+        addressing_type (AddressingType): The default way to address amplitudes.
+
+    Args:
+        addressing_type (AddressingType, optional): The default way to address amplitudes.
     """
-    def __init__(self, *args, measure=[], addressing_type=AddressingType.EDGE):
-        super().__init__(*args)
-        self.measure = measure
+    def __init__(self, addressing_type=AddressingType.EDGE):
+        super().__init__([])
         self.addressing_type=addressing_type
     def __repr__(self):
         l = [str(dic["instruction"].name) if "name" not in dic or dic["name"] == None else "{}({})".format(dic["instruction"].name,dic["name"]) for dic in self]
-        if len(self.measure) != 0:
-            l.append("PROBA({})".format(str(self.measure)))
         return " -> ".join(l)
 
     def __add__(self, other):
-        l = list(self)+list(other)
-        return PipeLine(l, measure=self.measure, addressing_type=self.addressing_type)
+        p = PipeLine(addressing_type=self.addressing_type)
+        p.extend(self)
+        p.extend(other)
+        return p
     def __mul__(self,other):
-        l = list(self)*other
-        return PipeLine(l, measure=self.measure, addressing_type=self.addressing_type)
+        p = PipeLine(addressing_type=self.addressing_type)
+        p.extend(list(self)*other)
+        return p
 
     def _read_entry(self, dic, qw):
         op = qwfast.OperationWrapper()
@@ -83,7 +112,10 @@ class PipeLine(list):
 
         if dic["instruction"] == Instruction.UNITARY:
             pos = np.reshape([qw._get_index(i, dic["addressing_type"]) for i in dic["targets"]], (-1,))
-            Unitary = qwfast.UnitaryOp(pos, dic["unitary"])
+            U = dic["unitary"]
+            if type(U) == type(lambda x:x):
+                U = U(len(pos))
+            Unitary = qwfast.UnitaryOp(pos, U)
             op.set_to_unitary(Unitary)
             return op
 
@@ -163,41 +195,38 @@ class PipeLine(list):
 
 
 def walk_on_edges(coin, scattering):
-    pipeline = PipeLine([], addressing_type=AddressingType.EDGE)
+    pipeline = PipeLine(addressing_type=AddressingType.EDGE)
     pipeline.add_coin(coin)
     pipeline.add_scattering(scattering)
     return pipeline
 
-def walk_on_nodes(scattering, coin=coins.X):
-    pipeline = PipeLine([], addressing_type=AddressingType.NODE)
+def walk_on_nodes(scattering, coin=_X):
+    pipeline = PipeLine(addressing_type=AddressingType.NODE)
     pipeline.add_scattering(scattering)
     pipeline.add_coin(coin)
     return pipeline
 
 
 def search_edge(coin, scattering, marked, oracle=None):
-    pipeline = PipeLine([], addressing_type=AddressingType.EDGE)
+    pipeline = PipeLine(addressing_type=AddressingType.EDGE)
     if oracle == None:
-        oracle = -coins.X
+        oracle = -_X
     pipeline.add_unitary(marked, oracle, name="Oracle")
     pipeline = pipeline + walk_on_edges(coin, scattering)
     pipeline.add_proba(marked)
     return pipeline
 
 def search_virtual_edge(coin, scattering, marked, oracle=None):
-    pipeline = PipeLine([], addressing_type=AddressingType.VIRTUAL_EDGE)
+    pipeline = PipeLine(addressing_type=AddressingType.VIRTUAL_EDGE)
     if oracle == None:
-        oracle = -coins.X
+        oracle = -_X
     pipeline.add_unitary(marked, oracle, name="Oracle")
     pipeline = pipeline + walk_on_edges(coin, scattering)
     pipeline.add_proba(marked)
     return pipeline
 
-def search_node(scattering, marked, oracle=None, coin=coins.X):
-    pipeline = PipeLine([], addressing_type=AddressingType.NODE)
-    if type(oracle) == type(None):
-        d = sum([len(qw.graph()[u]) for u in marked])
-        oracle = -np.eye(d)
+def search_node(scattering, marked, oracle=lambda d:-np.eye(d), coin=_X):
+    pipeline = PipeLine(addressing_type=AddressingType.NODE)
     pipeline.add_unitary(marked, oracle, name="Oracle")
     pipeline = pipeline + walk_on_nodes(scattering, coin=coin)
     pipeline.add_proba(marked)
@@ -289,8 +318,11 @@ class QWSearch:
         nodes = copy.deepcopy(self._G.nodes())
         s = {}
         for i in nodes:
-            self._G.add_edge(i,f"new_node{i}")
-            s[i] = (i,f"new_node{i}")
+            new_name = f"*{i}"
+            while new_name in self._G.nodes():
+                new_name = f"*{new_name}"
+            self._G.add_edge(i,new_name)
+            s[i] = (i,new_name)
         return s
 
 
