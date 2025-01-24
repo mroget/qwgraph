@@ -331,14 +331,9 @@ class QWSearch:
 
     Both the Quantum Walk and searching process are described in https://arxiv.org/abs/2310.10451
 
-    Attributes:
-        step (int): The current step (or epoch). Modifying this attribute will only change the step column of the `search` method.
-
     Args:
-        graph (networkx.Graph): The graph on which the QW will be defined.
-        search_nodes (bool, optional): If True, the graph will be starified and the QW will be tuned to search nodes instead of edges. 
-
-    
+        graph (networkx.Graph): The graph on which the QW will be defined. Alternatively, graph can be a DiGraph. In that case, the polarity will follow the orientation of the edges. Self loops are ignored.
+        starify (bool, optional): If True, the graph will be starified. 
     """
 
     ######################
@@ -347,7 +342,10 @@ class QWSearch:
     def __init__(self, graph, starify=False):
         self._starified = starify
         
-        self._G = deepcopy(graph)
+        self._G = nx.Graph()
+        edges = list(graph.edges())
+        edges = [(u,v) for (u,v) in edges if u!=v]
+        self._G.add_edges_from(edges)
         
         if self._starified:
             self._virtual_edges = self._starify()
@@ -420,9 +418,6 @@ class QWSearch:
     def nodes(self):
         """ Returns the list of nodes. Convenient when declaring which nodes are marked.
 
-        Args:
-            real_only (boolean, optional): If True, then only the real nodes will be returned. Has no effect when search_nodes==False.
-
         Returns:
             (list of node): The list of nodes of the underlying graph.
 
@@ -449,6 +444,20 @@ class QWSearch:
         return deepcopy(self._edges)
 
     def degree(self, node):
+        """ Returns the degree of a node.
+
+        Args:
+            node (node): The node you want the degree of.
+
+        Returns:
+            (int): The degree of node.
+
+        Examples:
+            >>> qw = QWSearch(nx.complete_graph(4))
+            >>> qw.degree(0)
+            3
+            
+        """
         return len(self._G[node])
 
     def graph(self):
@@ -486,27 +495,6 @@ class QWSearch:
         return deepcopy(self._virtual_edges)
 
 
-    def list_degrees(self):
-        """ Returns a dictionnary that associates its virtual edge to each node. This dictionnary is empty when the object has been built with `search_nodes==False` since there are no virtual edges in that case.
-
-        Returns:
-            (dict): A dictionnary {node: edge} that associates each node to its virtual edge.
-
-        Examples:
-            >>> qw = QWSearch(nx.complete_graph(4))
-            >>> qw.virtual_edges()
-            {}
-            >>> qw = QWSearch(nx.complete_graph(4),search_nodes=True)
-            >>> qw.virtual_edges()
-            {0: (0, 'new_node0'),
-             1: (1, 'new_node1'),
-             2: (2, 'new_node2'),
-             3: (3, 'new_node3')}
-            
-        """
-        return deepcopy(self._degrees)
-
-
 
 
 
@@ -515,25 +503,6 @@ class QWSearch:
     #############################
     ### Getters/Setters state ###
     #############################
-    def set_polarity(self, polarity):
-        b = True
-        opp = lambda x:"-" if x=="+" else "+"
-        for ((u,v),val) in polarity:
-            if polarity[(u,v)] not in ["+","-"]:
-                b = False
-                break
-
-            if (v,u) in polarity and polarity[(v,u)] != opp(polarity[(u,v)]):
-                b = False
-                break
-
-        if b:
-            for ((u,v),val) in polarity:
-                self._polarity[(u,v)] = val
-                self._polarity[(v,u)] = opp(val)
-            self._initalize_rust_object() 
-        else:
-            print("Warning: Polarity values not valid !", file=sys.stderr)
 
     def _get_index(self, pos, _type=AddressingType.EDGE):
         if _type == AddressingType.EDGE:
@@ -556,42 +525,106 @@ class QWSearch:
             return [2*index] if self._polarity[pos]=="-" else [2*index+1]
 
 
-    def polarity(self, amplitudes):
-        indices = {p:self._get_index(p,AddressingType.AMPLITUDE)[0] for p in amplitudes}
-        return {p:"-" if indices[p]%2==0 else "+" for p in amplitudes}
 
-    def label(self, positions, _type=AddressingType.EDGE):
-        indices = {p:[i for i in self._get_index(p,_type)] for p in positions}
-        return {p:[self._amplitude_labels[i] for i in indices[p]] for p in positions}
+    def polarity(self, targets):
+        """ Returns the polarity of the targets.
 
-
-    def state(self, positions, _type=AddressingType.EDGE):
-        """ Return the amplitudes of one/several/every edges.
-
-        For an edge (u,v), the amplitudes $\psi_{u,v}^+$ and $\psi_{u,v}^-$ will be returned in the form of a numpy array.
-
-        Args:
-            edges (list, optional): The list of edges for which we want to extract the amplitudes. If None, all the edges are extracted.
+        Args:   
+            targets (list of target): The list of targets. Targets must be amplitudes.
 
         Returns:
-            (dict): A dictionnary edge:amplitudes where the amplitudes are complex numpy arrays of dimension 2.
-        
+            (dict): The polarity ("+" or "-") of the targets in a dictionnary {target : polarity}.
+
         Examples:
-            >>> qw = QWSearch(nx.cycle_graph(4))
-            >>> qw.state()
-            {(0, 1): array([0.35355339+0.j, 0.35355339+0.j]),
-             (0, 3): array([0.35355339+0.j, 0.35355339+0.j]),
-             (1, 2): array([0.35355339+0.j, 0.35355339+0.j]),
-             (2, 3): array([0.35355339+0.j, 0.35355339+0.j])}
-            >>> qw.state(qw.edges()[0:2])
-            {(0, 1): array([0.35355339+0.j, 0.35355339+0.j]),
-             (0, 3): array([0.35355339+0.j, 0.35355339+0.j])}
+            >>> qw = QWSearch(nx.complete_graph(4))
+            >>> qw.polarity([(0,1),(1,0), (2,1),(1,2)])
+            {(0, 1): '-', (1, 0): '+', (2, 1): '+', (1, 2): '-'}
         """
-        indices = {p:[i for i in self._get_index(p,_type)] for p in positions}
-        return {p:np.array([self._qwf.state[i] for i in indices[p]],dtype=complex) for p in positions}
+        indices = {p:self._get_index(p,AddressingType.AMPLITUDE)[0] for p in targets}
+        return {p:"-" if indices[p]%2==0 else "+" for p in targets}
+
+    def label(self, targets, _type=AddressingType.EDGE):
+        """ Returns the latex label of the targets.
+
+        Args:   
+            targets (list of target): The list of targets. targets are edges, nodes, virtual edges or amplitudes depending of the addressing type.
+            _type (AddressingType, optional): The addressing type. Decides weither we addresse nodes, edges, amplitudes or virtual edges.
+
+        Returns:
+            (dict): The labels of the targets in a dictionnary {target : labels}.
+
+        Examples:
+            >>> qw = QWSearch(nx.complete_graph(4))
+            >>> qw.label([(0,1),(1,2)], _type = AddressingType.EDGE) # 1 edge <=> 2 amplitudes
+            {(0, 1): ['$\\psi_{0,1}^-$', '$\\psi_{0,1}^+$'], (1, 2): ['$\\psi_{1,2}^-$', '$\\psi_{1,2}^+$']}
+            >>> qw.label([(0,1),(1,2)], _type = AddressingType.AMPLITUDE) 
+            {(0, 1): ['$\\psi_{0,1}^-$'], (1, 2): ['$\\psi_{1,2}^-$']}
+            >>> qw.label([0,1], _type = AddressingType.NODE) # 1 node <=> 3 amplitudes
+            {0: ['$\\psi_{0,1}^-$', '$\\psi_{0,2}^-$', '$\\psi_{0,3}^-$'], 1: ['$\\psi_{0,1}^+$', '$\\psi_{1,2}^-$', '$\\psi_{1,3}^-$']}
+            >>> qw = QWSearch(nx.complete_graph(4), starify=True)
+            >>> qw.label([0,1], _type = AddressingType.VIRTUAL_EDGE) # 1 edge <=> 2 amplitudes
+            {0: ['$\\psi_{0,*0}^-$', '$\\psi_{0,*0}^+$'], 1: ['$\\psi_{1,*1}^-$', '$\\psi_{1,*1}^+$']}
+        """
+        indices = {p:[i for i in self._get_index(p,_type)] for p in targets}
+        return {p:[self._amplitude_labels[i] for i in indices[p]] for p in targets}
+
+
+    def proba(self, targets, _type=AddressingType.EDGE):
+        """ Returns the probability to measure one of the targets.
+
+        Args:   
+            targets (list of target): The list of targets. targets are edges, nodes, virtual edges or amplitudes depending of the addressing type.
+            _type (AddressingType, optional): The addressing type. Decides weither we addresse nodes, edges, amplitudes or virtual edges.
+
+        Returns:
+            (dict): The probability of measuring any of the targets as a dictionnary {target : proba}.
+
+        Examples:
+            >>> qw = QWSearch(nx.complete_graph(4))
+            >>> qw.proba([(0,1),(1,2)], _type = AddressingType.EDGE) # 1 edge <=> 2 amplitudes <=> probability of 2/12 with a diagonal distribution
+            {(0, 1): 0.1666666666666667, (1, 2): 0.1666666666666667}
+            >>> qw.proba([(0,1),(1,2)], _type = AddressingType.AMPLITUDE) # 1 amplitude <=> probability of 1/12 with a diagonal distribution
+            {(0, 1): 0.08333333333333336, (1, 2): 0.08333333333333336}
+            >>> qw.proba([0,1], _type = AddressingType.NODE) # 1 node <=> 3 amplitudes <=> probability of 3/12 with a diagonal distribution
+            {0: 0.25000000000000006, 1: 0.25000000000000006}
+            >>> qw = QWSearch(nx.complete_graph(4), starify=True)
+            >>> qw.proba([0,1], _type = AddressingType.VIRTUAL_EDGE) # 1 edge <=> 2 amplitudes <=> probability of 2/20 with a diagonal distribution on the starified graph
+            {0: 0.09999999999999999, 1: 0.09999999999999999}
+        """
+        indices = {p:[i for i in self._get_index(p,_type)] for p in targets}
+        return {p:self._qwf.get_proba(indices[p]) for p in targets}
+
+
+    def state(self, targets, _type=AddressingType.EDGE):
+        """ Returns the probability to measure one of the targets.
+
+        Args:   
+            targets (list of target): The list of targets. targets are edges, nodes, virtual edges or amplitudes depending of the addressing type.
+            _type (AddressingType, optional): The addressing type. Decides weither we addresse nodes, edges, amplitudes or virtual edges.
+
+        Returns:
+            (dict): The state/amplitude of the targets as a dictionnary {target : state}.
+
+        Examples:
+            >>> qw = QWSearch(nx.complete_graph(4))
+            >>> qw.state([(0,1),(1,2)], _type = AddressingType.EDGE) # 1 edge <=> 2 amplitudes
+            {(0, 1): array([0.28867513+0.j, 0.28867513+0.j]), (1, 2): array([0.28867513+0.j, 0.28867513+0.j])}
+            >>> qw.state([(0,1),(1,2)], _type = AddressingType.AMPLITUDE)
+            {(0, 1): array([0.28867513+0.j]), (1, 2): array([0.28867513+0.j])}
+            >>> qw.state([0,1], _type = AddressingType.NODE) # 1 node <=> 3 amplitudes
+            {0: array([0.28867513+0.j, 0.28867513+0.j, 0.28867513+0.j]), 1: array([0.28867513+0.j, 0.28867513+0.j, 0.28867513+0.j])}
+            >>> qw = QWSearch(nx.complete_graph(4), starify=True)
+            >>> qw.state([0,1], _type = AddressingType.VIRTUAL_EDGE) # 1 edge <=> 2 amplitudes
+            {0: array([0.2236068+0.j, 0.2236068+0.j]), 1: array([0.2236068+0.j, 0.2236068+0.j])}
+        """
+        indices = {p:[i for i in self._get_index(p,_type)] for p in targets}
+        return {p:np.array([self._qwf.state[i] for i in indices[p]],dtype=complex) for p in targets}
+
+
+
 
     def set_state(self, new_state):
-        """ Change the inner state (i.e. the amplitudes for every edges).
+        """ Change the state (i.e. the amplitudes for every edges).
 
         For an edge (u,v), the amplitudes $\psi_{u,v}^+$ and $\psi_{u,v}^-$ will be modified according to the argument.
         If the new state is not normalized, this method will automatically normalize it.
@@ -601,17 +634,17 @@ class QWSearch:
         
         Examples:
             >>> qw = QWSearch(nx.cycle_graph(4))
-            >>> qw.state()
+            >>> qw.state(qw.edges())
             {(0, 1): array([0.35355339+0.j, 0.35355339+0.j]),
              (0, 3): array([0.35355339+0.j, 0.35355339+0.j]),
              (1, 2): array([0.35355339+0.j, 0.35355339+0.j]),
              (2, 3): array([0.35355339+0.j, 0.35355339+0.j])}
             >>> qw.set_state({edge:[2,1j] for edge in qw.edges()})
-            >>> qw.state()
-            {(0, 1): array([0.4472136+0.j       , 0.       +0.2236068j]),
-             (0, 3): array([0.4472136+0.j       , 0.       +0.2236068j]),
-             (1, 2): array([0.4472136+0.j       , 0.       +0.2236068j]),
-             (2, 3): array([0.4472136+0.j       , 0.       +0.2236068j])}
+            >>> qw.state(qw.edges())
+            {(0, 1): array([0.32444284+0.j        , 0.        +0.16222142j]),
+             (0, 3): array([0.48666426+0.j        , 0.16222142+0.16222142j]),
+             (1, 2): array([0.48666426+0.j        , 0.16222142+0.16222142j]),
+             (2, 3): array([0.48666426+0.j        , 0.16222142+0.16222142j])}
         """
         s = np.sqrt(sum([abs(new_state[e][0])**2 + abs(new_state[e][1])**2 for e in new_state]))
         state = np.array([0]*2*self._E,dtype=complex)
@@ -620,46 +653,25 @@ class QWSearch:
             state[2*i+1] = new_state[self._edges[i]][1]/s
         self._qwf.state = state
 
-    def proba(self, searched, _type=AddressingType.EDGE):
-        """ Returns the probability to measure on of the searched element.
-
-        Args:   
-            searched (list of edge): The list of marked edges. Every element of the list must be an edge label (all of them are listed in `qw.edges`).
-
-        Returns:
-            (float): The probability of measuring any of the marked edges.
-
-        Examples:
-            >>> qw = QWSearch(nx.complete_graph(4))
-            >>> qw.get_proba([qw.edges()[0]])
-            0.1666666666666667
-            >>> qw.get_proba([qw.edges()[0],qw.edges()[1]])
-            0.3333333333333334
-            >>> qw.get_proba(qw.edges())
-            1.
-        """
-        indices = {p:[i for i in self._get_index(p,_type)] for p in searched}
-        return {p:self._qwf.get_proba(indices[p]) for p in searched}
-
     def reset(self):
         """ Reset the state to a diagonal one and reset the current step to 0.
         Do not return anything.
 
         Examples:
             >>> qw = QWSearch(nx.cycle_graph(4))
-            >>> qw.state()
+            >>> qw.state(qw.edges())
             {(0, 1): array([0.35355339+0.j, 0.35355339+0.j]),
              (0, 3): array([0.35355339+0.j, 0.35355339+0.j]),
              (1, 2): array([0.35355339+0.j, 0.35355339+0.j]),
              (2, 3): array([0.35355339+0.j, 0.35355339+0.j])}
             >>> qw.set_state({edge:[2,1j] for edge in qw.edges()})
-            >>> qw.state()
+            >>> qw.state(qw.edges())
             {(0, 1): array([0.4472136+0.j       , 0.       +0.2236068j]),
              (0, 3): array([0.4472136+0.j       , 0.       +0.2236068j]),
              (1, 2): array([0.4472136+0.j       , 0.       +0.2236068j]),
              (2, 3): array([0.4472136+0.j       , 0.       +0.2236068j])}
             >>> qw.reset()
-            >>> qw.state()
+            >>> qw.state(qw.edges())
             {(0, 1): array([0.35355339+0.j, 0.35355339+0.j]),
              (0, 3): array([0.35355339+0.j, 0.35355339+0.j]),
              (1, 2): array([0.35355339+0.j, 0.35355339+0.j]),
@@ -676,60 +688,44 @@ class QWSearch:
 
 
     def run(self, pipeline, ticks=1):
-        """ Run the simulation with coin `C`, oracle `R` for ticks steps and with searched elements `search`.
-        Nothing will be returned but the inner state will be modified inplace.
+        """ Run the simulation with the given pipeline for ticks steps.
+        The state will be modified inplace and the proba extracted (if any) will be returned. 
 
         Args:
-            C (numpy.array of complex): The coin defined as a 2x2 numpy array of complex.
-            R (numpy.array of complex): The oracle defined as a 2x2 numpy array of complex.
-            searched (list, optional): The list of marked elements. "elements" here means nodes if search_nodes was true when building the object, and means edges otherwise.
+            pipeline (PipeLine): The pipeline containing the operations of one step.
             ticks (int, optional): The number of time steps.
 
-        Examples:
-            >>> qw = QWSearch(nx.cycle_graph(6))
-            >>> qw.set_state({edge:([1,0] if edge==qw.edges()[len(qw.edges())//2] else [0,0]) for edge in qw.edges()})
-            >>> [qw.get_proba([e]) for e in qw.edges()]
-            [0.0, 0.0, 0.0, 1.0, 0.0, 0.0]
-            >>> qw.run(coins.H,coins.I,ticks=3)
-            >>> [np.round(qw.get_proba([e]),3) for e in qw.edges()]
-            [0.0, 0.25, 0.625, 0.0, 0.125, 0.0]
-        """
-
-        return self._qwf.run(pipeline._read(self),ticks)
-
-
-    def run_with_trace(self, pipeline, ticks=1):
-        """ Run the simulation with coin `C`, oracle `R` for ticks steps and with searched elements `search`.
-        Nothing will be returned but the inner state will be modified inplace.
-
-        Args:
-            C (numpy.array of complex): The coin defined as a 2x2 numpy array of complex.
-            R (numpy.array of complex): The oracle defined as a 2x2 numpy array of complex.
-            searched (list, optional): The list of marked elements. "elements" here means nodes if search_nodes was true when building the object, and means edges otherwise.
-            ticks (int, optional): The number of time steps.
+        Returns:
+            (np.array): The probabilities measured in order.
 
         Examples:
-            >>> qw = QWSearch(nx.cycle_graph(6))
+            >>> qw = QWSearch(nx.cycle_graph(5))
             >>> qw.set_state({edge:([1,0] if edge==qw.edges()[len(qw.edges())//2] else [0,0]) for edge in qw.edges()})
-            >>> [qw.get_proba([e]) for e in qw.edges()]
-            [0.0, 0.0, 0.0, 1.0, 0.0, 0.0]
-            >>> qw.run(coins.H,coins.I,ticks=3)
-            >>> [np.round(qw.get_proba([e]),3) for e in qw.edges()]
-            [0.0, 0.25, 0.625, 0.0, 0.125, 0.0]
+            >>> qw.proba(qw.edges())
+            {(0, 1): 0.0, (0, 4): 0.0, (1, 2): 1.0, (4, 3): 0.0, (2, 3): 0.0}
+            >>> pipeline = PipeLine()
+            >>> pipeline.add_coin(coins.H)
+            >>> pipeline.add_scattering("cycle")
+            >>> qw.run(pipeline, ticks=2)
+            >>> qw.proba(qw.edges())
+            {(0, 1): 0.0, (0, 4): 0.2499999999999999, (1, 2): 0.4999999999999998, (4, 3): 0.2499999999999999, (2, 3): 0.0}
+            >>> pipeline.add_proba([(0,1)])
+            >>> qw.set_state({edge:([1,0] if edge==qw.edges()[len(qw.edges())//2] else [0,0]) for edge in qw.edges()})
+            >>> p = qw.run(pipeline, ticks=10)
+            >>> p
+            array([0.5, 0., 0.125, 0.0625, 0.25, 0.078125, 0.5078125, 0.265625, 0.29101562, 0.06347656])
         """
-        l = self._qwf.run_with_trace(pipeline._read(self),ticks)
-        l = [[i] + l[i] for i in range(len(l))]
-        return pd.DataFrame(l,columns=["steps"] + self._amplitude_labels)
+
+        return np.array(self._qwf.run(pipeline._read(self),ticks))
+
 
     def get_unitary(self, pipeline, dataframe=False, progress=False):
-        """ For a given coin, oracle and set of searched edges, compute and return the unitary U coresponding to one step of the QW.
+        """ For a given pipeline, compute and return the unitary U coresponding to one step of the QW.
 
         This method **do not** change the state of the QW.
 
         Args:
-            C (numpy.array of complex): The coin defined as a 2x2 numpy array of complex.
-            R (numpy.array of complex): The oracle defined as a 2x2 numpy array of complex.
-            searched (list, optional): The list of marked elements. "elements" here means nodes if search_nodes was true when building the object, and means edges otherwise.
+            pipeline (PipeLine): The pipeline containing the operations of one step.
             dataframe (bool, optional): If True, the result will be a pandas dataframe instead of a numpy array. 
             progress (bool, optional): If True, a tqdm progress bar will be displayed.
 
@@ -737,20 +733,20 @@ class QWSearch:
             (numpy array or pandas dataframe): The unitary operator coresponding to one step of the dynamic. If dataframe is set to True, a pandas dataframe will be returned instead.
         
         Examples:
-            >>> qw = QWSearch(nx.cycle_graph(3))
-            >>> qw.get_unitary(coins.H,coins.I)
-            array([[ 0.        +0.j,  0.        +0.j,  0.70710678+0.j,
-                     0.70710678+0.j,  0.        +0.j,  0.        +0.j],
-                   [ 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                     0.        +0.j,  0.70710678+0.j,  0.70710678+0.j],
-                   [ 0.70710678+0.j,  0.70710678+0.j,  0.        +0.j,
+            >>> qw = QWSearch(nx.balanced_tree(3,1))
+            >>> qw.get_unitary(walk_on_edges(coins.X, "grover"))
+            array([[ 0.        +0.j,  1.        +0.j,  0.        +0.j,
                      0.        +0.j,  0.        +0.j,  0.        +0.j],
+                   [-0.33333333+0.j,  0.        +0.j,  0.66666667+0.j,
+                     0.        +0.j,  0.66666667+0.j,  0.        +0.j],
                    [ 0.        +0.j,  0.        +0.j,  0.        +0.j,
-                     0.        +0.j,  0.70710678+0.j, -0.70710678+0.j],
-                   [ 0.70710678+0.j, -0.70710678+0.j,  0.        +0.j,
-                     0.        +0.j,  0.        +0.j,  0.        +0.j],
-                   [ 0.        +0.j,  0.        +0.j,  0.70710678+0.j,
-                    -0.70710678+0.j,  0.        +0.j,  0.        +0.j]])
+                     1.        +0.j,  0.        +0.j,  0.        +0.j],
+                   [ 0.66666667+0.j,  0.        +0.j, -0.33333333+0.j,
+                     0.        +0.j,  0.66666667+0.j,  0.        +0.j],
+                   [ 0.        +0.j,  0.        +0.j,  0.        +0.j,
+                     0.        +0.j,  0.        +0.j,  1.        +0.j],
+                   [ 0.66666667+0.j,  0.        +0.j,  0.66666667+0.j,
+                     0.        +0.j, -0.33333333+0.j,  0.        +0.j]])
         """
         old_state = copy.deepcopy(self._qwf.state)
         U = []

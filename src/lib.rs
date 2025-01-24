@@ -381,15 +381,6 @@ impl QWFast {
         Ok(ret)
     }
 
-    fn run_with_trace(&mut self, pipeline : Vec<OperationWrapper>, ticks : usize) {
-        let mut ret = Vec::with_capacity(ticks+1);
-        ret.push(self.state.clone());
-        for _i in 0..ticks {
-            self.apply(&pipeline);
-            ret.push(self.state.clone());
-        }
-    }
-
     fn reset(&mut self) {
         self.state = vec![Cplx::new(1./(2.*self.e as f64).sqrt(),0.);2*self.e];
     } 
