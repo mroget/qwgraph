@@ -141,6 +141,47 @@ class PipeLine(list):
 
 
 
+def walk_on_edges(coin, scattering):
+    pipeline = PipeLine([], addressing_type=AddressingType.EDGE)
+    pipeline.add_coin(coin)
+    pipeline.add_scattering(scattering)
+    return pipeline
+
+def walk_on_nodes(scattering):
+    pipeline = PipeLine([], addressing_type=AddressingType.NODE)
+    pipeline.add_scattering(scattering)
+    pipeline.add_coin(coins.X)
+    return pipeline
+
+
+def search_edge(coin, scattering, marked, oracle=None):
+    pipeline = PipeLine([], addressing_type=AddressingType.EDGE, measure=marked)
+    if oracle == None:
+        oracle = -coins.X
+    pipeline.add_unitary(marked, oracle, name="Oracle")
+    for op in walk_on_edges(coin, scattering):
+        pipeline.append(op)
+    return pipeline
+
+def search_virtual_edge(coin, scattering, marked, oracle=None):
+    pipeline = PipeLine([], addressing_type=AddressingType.VIRTUAL_EDGE, measure=marked)
+    if oracle == None:
+        oracle = -coins.X
+    pipeline.add_unitary(marked, oracle, name="Oracle")
+    for op in walk_on_edges(coin, scattering):
+        pipeline.append(op)
+    return pipeline
+
+def search_node(scattering, marked, oracle=None):
+    pipeline = PipeLine([], addressing_type=AddressingType.NODE, measure=marked)
+    if type(oracle) == type(None):
+        d = sum([len(qw.graph()[u]) for u in marked])
+        oracle = -np.eye(d)
+    pipeline.add_unitary(marked, oracle, name="Oracle")
+    for op in walk_on_nodes(scattering):
+        pipeline.append(op)
+    return pipeline
+
 
 
 
