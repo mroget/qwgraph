@@ -389,32 +389,34 @@ impl QWFast {
         Ok(self.proba(&target))
     }
 
-    fn carac(&mut self, pipeline : Vec<OperationWrapper>, measure : Vec<usize>, waiting : i32) -> PyResult<(usize,f64)> {
-        let mut current : f64 = self.proba(&measure);
-        let mut min : f64 = current;
-        let mut max : f64 = current;
+    fn carac(&mut self, pipeline : Vec<OperationWrapper>, waiting : i32, timeout : usize) -> PyResult<(usize,f64)> {
+        let mut min : f64 = -1.;
+        let mut max : f64 = -1.;
         let mut pos : usize = 0;
         let mut steps : usize = 0;
         let mut waiting = waiting;
-        self.reset();
+        let mut iter : usize = 0;
 
         loop {
-            self.apply(&pipeline);
-            steps+=1;
-            current = self.proba(&measure);
-            if waiting <= 0 && current < (max+min)/2. {
-                break;
+            for &current in self.apply(&pipeline).iter() {
+                steps+=1;
+                if waiting <= 0 && current < (max+min)/2. {
+                    return Ok((pos,max));
+                }
+                if current > max || steps == 1 {
+                    max = current;
+                    pos = steps;
+                }
+                if current < min || steps == 1 {
+                    min = current;
+                }
+                waiting -= 1;
             }
-            if current > max {
-                max = current;
-                pos = steps;
+            iter += 1;
+            if iter > timeout {
+                return Ok((pos,max));
             }
-            if current < min {
-                min = current;
-            }
-            waiting -= 1;
         }
-        Ok((pos,max))
     }
 
 }

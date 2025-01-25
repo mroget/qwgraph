@@ -292,16 +292,17 @@ def walk_on_nodes(scattering, coin=_X):
 
 def search_edge(coin, scattering, marked, oracle=None):
     pipeline = PipeLine(addressing_type=AddressingType.EDGE)
-    if oracle == None:
+    if type(oracle) == type(None):
         oracle = -_X
-    pipeline.add_unitary(marked, oracle, name="Oracle")
+    for m in marked:
+        pipeline.add_unitary([m], oracle, name=f"Oracle on {m}")
     pipeline = pipeline + walk_on_edges(coin, scattering)
     pipeline.add_proba(marked)
     return pipeline
 
 def search_virtual_edge(coin, scattering, marked, oracle=None):
     pipeline = PipeLine(addressing_type=AddressingType.VIRTUAL_EDGE)
-    if oracle == None:
+    if type(oracle) == type(None):
         oracle = -_X
     pipeline.add_unitary(marked, oracle, name="Oracle")
     pipeline = pipeline + walk_on_edges(coin, scattering)
@@ -762,7 +763,7 @@ class QWSearch:
         else:
             return U
 
-    def get_T_P(self, pipeline, waiting=10):
+    def get_T_P(self, pipeline, waiting=10, maxiter=10000):
         """ Computes the hitting time and probability of success for a given QW. 
 
         The waiting parameter is used to accumalate informations about the signal (recommended to be at least 10).
@@ -773,25 +774,25 @@ class QWSearch:
         The algorithms computes the series $p(t)$, $T_{max}(t)$, $T_{min}(t)$ and stop when it encounters `t>waiting` such that $p(t)<\\frac{p\\left(T_{max}(t)\\right)+p\\left(T_{max}(t)\\right)}{2}$. 
         It then returns $T_{max}(t), p\\left(T_{max}(t)\\right)$.
 
-        **Warning:** This function will reset the state of the QW.
+        **Warning:** This function won't change the state of the QW.
+
+        If several probability extractions are present in the pipeline, the hitting time returned will be the number of extraction before reaching the first peak.
 
         Args:
-            C (numpy.array of complex): The coin defined as a 2x2 numpy array of complex.
-            R (numpy.array of complex): The oracle defined as a 2x2 numpy array of complex.
-            searched (list, optional): The list of marked elements. "elements" here means nodes if search_nodes was true when building the object, and means edges otherwise.
-            waiting (int, optional): The waiting time for the algorithm. Must be smaller than the hitting time.
+            pipeline (PipeLine): The pipeline containing the operations of one step.
+            waiting (int, optional): The number of steps the algorithm uses to collect information on the signal. Must be smaller than the hitting time.
+            maxiter (int, optional): The maximum number of iterations of the QW.
 
         Returns:
             (int*float): T:int,P:float respectively the hitting time and probability of success.
 
         Examples:
             >>> qw = QWSearch(nx.complete_graph(100))
-            >>> qw.get_T_P(coins.X,-coins.X,searched=qw.edges()[0:4])
-            (28, 0.9565191408575295)
+            >>> qw.get_T_P(search_edge(coins.X, "grover", [qw.edges()[0]], -coins.X))
+            (55, 0.9812661464139945)
         """
 
-        self.reset()
-        indices = np.reshape([self._get_index(i, pipeline.adressing_type) for i in pipeline.measure], (-1,))
-        ret = self._qwf.carac(pipeline._read(self),indices,waiting)
-        self.reset()
+        old_state = copy.deepcopy(self._qwf.state)
+        ret = self._qwf.carac(pipeline._read(self),waiting,maxiter)
+        self._qwf.state = old_state
         return ret
