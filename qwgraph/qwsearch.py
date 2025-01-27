@@ -157,7 +157,7 @@ class PipeLine(list):
         """ Add an arbitrary unitary application to the pipeline.
         Args:
             targets (list): The list of targets.
-            unitary (np.array): The matrix of the unitary operator.
+            unitary (np.array): The matrix of the unitary operator. Alternatively, can be a function that takes one argument (the degree) and returns an unitary.
             addressing_type (AddressingType, optional): The way the targets are addressed (edges, nodes, virtual edges or amplitudes). If set to None, this parameter will take the value of the class attribute addressing_type.
             name (str, optional): A name of the operation. As no effect on the dynamic but shows when printing the pipeline.
         
@@ -278,19 +278,64 @@ class PipeLine(list):
 
 
 def walk_on_edges(coin, scattering):
+    """ Create a default pipeline of a QW on edges
+
+    Args:
+        coin (numpy array): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.
+        scattering (str): "cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.
+
+    Returns:
+        (PipeLine): The pipeline of a QW on edges.
+
+    Examples:
+        >>> walk_on_edges(coins.X,"grover")
+        COIN -> SCATTERING
+            
+    """
     pipeline = PipeLine(addressing_type=AddressingType.EDGE)
     pipeline.add_coin(coin)
     pipeline.add_scattering(scattering)
     return pipeline
 
 def walk_on_nodes(scattering, coin=_X):
+    """ Create a default pipeline of a QW on nodes
+
+    Args:
+        scattering (str): "cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.
+        coin (numpy array, optional): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.
+
+    Returns:
+        (PipeLine): The pipeline of a QW on edges.
+
+    Examples:
+        >>> walk_on_nodes("grover")
+        SCATTERING -> COIN
+            
+    """
     pipeline = PipeLine(addressing_type=AddressingType.NODE)
     pipeline.add_scattering(scattering)
     pipeline.add_coin(coin)
     return pipeline
 
 
-def search_edge(coin, scattering, marked, oracle=None):
+def search_edges(coin, scattering, marked, oracle=None):
+    """ Create a default pipeline of a QW on edges searching edges
+
+    Args:
+        coin (numpy array): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.
+        scattering (str): "cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.
+        marked (list): the list of marked edges.
+        oracle (numpy array, optional): The two by two unitary operator of the oracle. If None, then -X will be used.
+
+    Returns:
+        (PipeLine): The pipeline of a QW on edges searching edges.
+
+    Examples:
+        >>> qw = QWSearch(nx.complete_graph(100), starify=True)
+        >>> search_edges(coins.X, "grover", qw.edges()[0:4], -coins.X)
+        UNITARY(Oracle on (0, 1)) -> UNITARY(Oracle on (0, 2)) -> UNITARY(Oracle on (0, 3)) -> UNITARY(Oracle on (0, 4)) -> COIN -> SCATTERING -> PROBA
+            
+    """
     pipeline = PipeLine(addressing_type=AddressingType.EDGE)
     if type(oracle) == type(None):
         oracle = -_X
@@ -300,18 +345,54 @@ def search_edge(coin, scattering, marked, oracle=None):
     pipeline.add_proba(marked)
     return pipeline
 
-def search_virtual_edge(coin, scattering, marked, oracle=None):
+def search_virtual_edges(coin, scattering, marked, oracle=None):
+    """ Create a default pipeline of a QW on edges searching nodes
+
+    Args:
+        coin (numpy array): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.
+        scattering (str): "cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.
+        marked (list): the list of marked edges.
+        oracle (numpy array, optional): The two by two unitary operator of the oracle. If None, then -X will be used.
+
+    Returns:
+        (PipeLine): The pipeline of a QW on edges searching edges.
+
+    Examples:
+        >>> qw = QWSearch(nx.complete_graph(100), starify=True)
+        >>> search_virtual_edges(coins.X, "grover", qw.nodes()[0:4], -coins.X)
+        UNITARY(Oracle on 0) -> UNITARY(Oracle on 1) -> UNITARY(Oracle on 2) -> UNITARY(Oracle on 3) -> COIN -> SCATTERING -> PROBA
+            
+    """
     pipeline = PipeLine(addressing_type=AddressingType.VIRTUAL_EDGE)
     if type(oracle) == type(None):
         oracle = -_X
-    pipeline.add_unitary(marked, oracle, name="Oracle")
+    for m in marked:
+        pipeline.add_unitary([m], oracle, name=f"Oracle on {m}")
     pipeline = pipeline + walk_on_edges(coin, scattering)
     pipeline.add_proba(marked)
     return pipeline
 
-def search_node(scattering, marked, oracle=lambda d:-np.eye(d), coin=_X):
+def search_nodes(scattering, marked, oracle=lambda d:-np.eye(d), coin=_X):
+    """ Create a default pipeline of a QW on nodes searching nodes
+
+    Args:
+        scattering (str): "cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.
+        marked (list): the list of marked edges.
+        oracle (numpy array, optional): The unitary operator of the oracle (or a function of the degree returning the unitary). If None, then -I will be used.
+        coin (numpy array, optional): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.
+
+    Returns:
+        (PipeLine): The pipeline of a QW on edges searching edges.
+
+    Examples:
+        >>> qw = QWSearch(nx.complete_graph(100), starify=True)
+        >>> search_nodes("grover", qw.nodes()[0:4], lambda d:-np.eye(d), coins.X)
+        UNITARY(Oracle on 0) -> UNITARY(Oracle on 1) -> UNITARY(Oracle on 2) -> UNITARY(Oracle on 3) -> SCATTERING -> COIN -> PROBA
+            
+    """
     pipeline = PipeLine(addressing_type=AddressingType.NODE)
-    pipeline.add_unitary(marked, oracle, name="Oracle")
+    for m in marked:
+        pipeline.add_unitary([m], oracle, name=f"Oracle on {m}")
     pipeline = pipeline + walk_on_nodes(scattering, coin=coin)
     pipeline.add_proba(marked)
     return pipeline
@@ -476,7 +557,7 @@ class QWSearch:
         return deepcopy(self._G)
 
     def virtual_edges(self):
-        """ Returns a dictionnary that associates its virtual edge to each node. This dictionnary is empty when the object has been built with `search_nodes==False` since there are no virtual edges in that case.
+        """ Returns a dictionnary that associates its virtual edge to each node.
 
         Returns:
             (dict): A dictionnary {node: edge} that associates each node to its virtual edge.
@@ -485,12 +566,9 @@ class QWSearch:
             >>> qw = QWSearch(nx.complete_graph(4))
             >>> qw.virtual_edges()
             {}
-            >>> qw = QWSearch(nx.complete_graph(4),search_nodes=True)
+            >>> qw = QWSearch(nx.complete_graph(4),starify=True)
             >>> qw.virtual_edges()
-            {0: (0, 'new_node0'),
-             1: (1, 'new_node1'),
-             2: (2, 'new_node2'),
-             3: (3, 'new_node3')}
+            {0: (0, '*0'), 1: (1, '*1'), 2: (2, '*2'), 3: (3, '*3')}
             
         """
         return deepcopy(self._virtual_edges)
@@ -788,7 +866,7 @@ class QWSearch:
 
         Examples:
             >>> qw = QWSearch(nx.complete_graph(100))
-            >>> qw.get_T_P(search_edge(coins.X, "grover", [qw.edges()[0]], -coins.X))
+            >>> qw.get_T_P(search_edges(coins.X, "grover", [qw.edges()[0]], -coins.X))
             (55, 0.9812661464139945)
         """
 
