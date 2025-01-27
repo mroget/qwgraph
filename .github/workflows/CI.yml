@@ -40,7 +40,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-ubuntu-latest-${{ matrix.target }}
-          path: dist
+          path: dist/
 
   windows:
     runs-on: windows-latest
@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-latest-${{ matrix.target }}
-          path: dist
+          path: dist/
 
   macos:
     runs-on: macos-latest
@@ -85,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-latest-${{ matrix.target }}
-          path: dist
+          path: dist/
 
   sdist:
     runs-on: ubuntu-latest
@@ -100,7 +100,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels
-          path: dist
+          path: dist/
 
 
   publish-to-pypi:
@@ -115,7 +115,5 @@ jobs:
     steps:
     - name: Download all the dists
       uses: actions/download-artifact@v4
-      with:
-        path: all
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
