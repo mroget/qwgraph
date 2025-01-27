@@ -39,7 +39,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.ubuntu-latest }}
+          name: wheels-ubuntu-latest-${{ matrix.targets }}
           path: dist
 
   windows:
@@ -62,7 +62,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.windows-latest }}
+          name: wheels-windows-latest-${{ matrix.targets }}
           path: dist
 
   macos:
@@ -84,7 +84,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.macos-latest }}
+          name: wheels-macos-latest-${{ matrix.targets }}
           path: dist
 
   sdist:
@@ -99,7 +99,7 @@ jobs:
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.sdist }}
+          name: wheels
           path: dist
 
   release:
