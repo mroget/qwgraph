@@ -5,8 +5,6 @@
 import numpy as np
 import math 
 from math import pi 
-from scipy import signal
-from scipy import linalg
 # Graph
 import networkx as nx 
 # Utilities
