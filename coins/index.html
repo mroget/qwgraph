@@ -12,6 +12,8 @@
         <link rel="prev" href="../qwsearch/">
       
       
+        <link rel="next" href="../demo/">
+      
       
       <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.6">
@@ -384,6 +386,26 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demo/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Demo
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -838,27 +860,27 @@ e^{i\phi} \sin \theta &amp; e^{i(\lambda+\phi)} \cos \theta \\
 </table>
         <details class="quote">
           <summary>Source code in <code>qwgraph/coins.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generalized_coin</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">lbd</span><span class="p">):</span>
-<span class="w">	</span><span class="sd">&quot;&quot;&quot; General coin</span>
-
-<span class="sd">	$$</span>
-<span class="sd">	U(\\theta,\\phi,\\lambda) = \\left(\\begin{matrix}</span>
-<span class="sd">	\\cos \\theta &amp; -e^{i\\lambda} \\sin \\theta \\\\</span>
-<span class="sd">	e^{i\\phi} \\sin \\theta &amp; e^{i(\\lambda+\\phi)} \\cos \\theta \\\\</span>
-<span class="sd">	\\end{matrix}\\right)</span>
-<span class="sd">	$$</span>
-
-<span class="sd">	Args:</span>
-<span class="sd">		theta (float): The angle $\\theta$.</span>
-<span class="sd">		phi (float): The angle $\\phi$.</span>
-<span class="sd">		lbd (float): The angle $\\lambda$.</span>
-
-<span class="sd">	Returns:</span>
-<span class="sd">		(complex numpy array): $U(\\theta,\\phi,\\lambda)$</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-	<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">lbd</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)],</span>
-		<span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">phi</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">lbd</span><span class="o">+</span><span class="n">phi</span><span class="p">))</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)]],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
-</code></pre></div>
+          <div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span> <span class="nf">generalized_coin</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">lbd</span><span class="p">):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot; General coin</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">	$$</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">	U(\\theta,\\phi,\\lambda) = \\left(\\begin{matrix}</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">	\\cos \\theta &amp; -e^{i\\lambda} \\sin \\theta \\\\</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">	e^{i\\phi} \\sin \\theta &amp; e^{i(\\lambda+\\phi)} \\cos \\theta \\\\</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="sd">	\\end{matrix}\\right)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">	$$</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">	Args:</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">		theta (float): The angle $\\theta$.</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="sd">		phi (float): The angle $\\phi$.</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">		lbd (float): The angle $\\lambda$.</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">	Returns:</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="sd">		(complex numpy array): $U(\\theta,\\phi,\\lambda)$</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">	&quot;&quot;&quot;</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>	<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">lbd</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)],</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>		<span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">phi</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">lbd</span><span class="o">+</span><span class="n">phi</span><span class="p">))</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)]],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+</span></code></pre></div>
         </details>
     </div>
 
@@ -922,26 +944,26 @@ P(\phi) = \left(\begin{matrix}
 </table>
         <details class="quote">
           <summary>Source code in <code>qwgraph/coins.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">phase_shift</span><span class="p">(</span><span class="n">phi</span><span class="p">):</span>
-<span class="w">	</span><span class="sd">&quot;&quot;&quot; Phase shift coin</span>
-
-<span class="sd">	$$</span>
-<span class="sd">	P(\\phi) = \\left(\\begin{matrix}</span>
-<span class="sd">	1 &amp; 0 \\\\</span>
-<span class="sd">	0 &amp; e^{i(\\phi)}\\\\</span>
-<span class="sd">	\\end{matrix}\\right)</span>
-<span class="sd">	$$</span>
-
-<span class="sd">	Args:</span>
-<span class="sd">		phi (float): The angle $\\phi$.</span>
-
-<span class="sd">	Returns:</span>
-<span class="sd">		(complex numpy array): $P(\\phi)$</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-	<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
-		<span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
-		<span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">phi</span><span class="p">)]],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
-</code></pre></div>
+          <div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span> <span class="nf">phase_shift</span><span class="p">(</span><span class="n">phi</span><span class="p">):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">	</span><span class="sd">&quot;&quot;&quot; Phase shift coin</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">	$$</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">	P(\\phi) = \\left(\\begin{matrix}</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">	1 &amp; 0 \\\\</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">	0 &amp; e^{i(\\phi)}\\\\</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="sd">	\\end{matrix}\\right)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">	$$</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">	Args:</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">		phi (float): The angle $\\phi$.</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">	Returns:</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="sd">		(complex numpy array): $P(\\phi)$</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">	&quot;&quot;&quot;</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>	<span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>		<span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>		<span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">phi</span><span class="p">)]],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+</span></code></pre></div>
         </details>
     </div>
 
