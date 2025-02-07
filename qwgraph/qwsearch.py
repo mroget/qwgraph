@@ -310,11 +310,11 @@ class QWSearch:
         
         self._edges = list(self._G.edges()) # List of edges
         self._nodes = list(self._G.nodes()) # List of nodes
-        self._E = len(self._edges) # Number of edges
-        self._N = len(self._nodes) # Number of nodes
+        self.E = len(self._edges) # Number of edges
+        self.N = len(self._nodes) # Number of nodes
         self._degrees = list(set(list(dict(nx.degree(self._G)).values())))
         self._index = {self._edges[i]:i for i in range(len(self._edges))} # Index for edges
-        self._nodes_index = {self._nodes[i]:i  for i in range(self._N)} # Index for nodes
+        self._nodes_index = {self._nodes[i]:i  for i in range(self.N)} # Index for nodes
 
         if nx.bipartite.is_bipartite(self._G):
             color = nx.bipartite.color(self._G) # Coloring
@@ -330,7 +330,7 @@ class QWSearch:
         
 
     def _initalize_rust_object(self):
-        self._amplitude_labels = [""]*2*self._E
+        self._amplitude_labels = [""]*2*self.E
         wiring = [] # For any amplitude self.state[i], says to which node it is connected. Important for the scattering.
         k = 0
         for (i,j) in self._edges:
@@ -348,8 +348,8 @@ class QWSearch:
             k+=2
         
 
-        self._qwf = qwfast.QWFast(wiring,self._N,self._E)
-        self._around_nodes_indices = qwfast._get_indices_around_nodes(self._E,self._N,wiring)
+        self._qwf = qwfast.QWFast(wiring,self.N,self.E)
+        self._around_nodes_indices = qwfast._get_indices_around_nodes(self.E,self.N,wiring)
 
         self.reset()
 
@@ -602,8 +602,8 @@ class QWSearch:
              (2, 3): array([0.48666426+0.j        , 0.16222142+0.16222142j])}
         """
         s = np.sqrt(sum([abs(new_state[e][0])**2 + abs(new_state[e][1])**2 for e in new_state]))
-        state = np.array([0]*2*self._E,dtype=complex)
-        for i in range(self._E):
+        state = np.array([0]*2*self.E,dtype=complex)
+        for i in range(self.E):
             state[2*i] = new_state[self._edges[i]][0]/s
             state[2*i+1] = new_state[self._edges[i]][1]/s
         self._qwf.state = state
@@ -705,8 +705,8 @@ class QWSearch:
         """
         old_state = copy.deepcopy(self._qwf.state)
         U = []
-        for i in (tqdm(range(2*self._E),ncols=100)) if progress else (range(2*self._E)):
-            self._qwf.state = np.array([int(i==j) for j in range(2*self._E)],dtype=complex)
+        for i in (tqdm(range(2*self.E),ncols=100)) if progress else (range(2*self.E)):
+            self._qwf.state = np.array([int(i==j) for j in range(2*self.E)],dtype=complex)
             self.run(pipeline, ticks=1)
             U.append(copy.deepcopy(self._qwf.state))
         self._qwf.state = old_state
