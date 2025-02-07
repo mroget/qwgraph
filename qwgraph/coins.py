@@ -12,7 +12,7 @@ def generalized_coin(theta, phi, lbd):
 	$$
 	U(\\theta,\\phi,\\lambda) = \\left(\\begin{matrix}
 	\\cos \\theta & -e^{i\\lambda} \\sin \\theta \\\\
-	e^{i\\lambda} \\sin \\theta & e^{i(\\lambda+\\phi)} \\cos \\theta \\\\
+	e^{i\\phi} \\sin \\theta & e^{i(\\lambda+\\phi)} \\cos \\theta \\\\
 	\\end{matrix}\\right)
 	$$
 

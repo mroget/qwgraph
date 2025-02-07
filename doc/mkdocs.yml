@@ -1,4 +1,4 @@
-site_name: "QWGraph Documentation v2.0"
+site_name: "QWGraph Documentation v1.0"
 
 nav:
   - Home: 'index.md'

@@ -12,7 +12,6 @@ An example notebook can be found at https://github.com/mroget/qwgraph/blob/main/
 # Installation
 ## 1. From pip
 `pip install qwgraph`
-For windows users, it might be necessary to install the rust toolchain cargo.
 
 ## 2. From source
 ```
