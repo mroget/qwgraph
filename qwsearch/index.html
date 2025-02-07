@@ -508,45 +508,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.walk_on_edges" class="md-nav__link">
+  <a href="#qwgraph.pipelines" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.walk_on_edges
+      qwgraph.pipelines
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.walk_on_nodes" class="md-nav__link">
+  <a href="#qwgraph.pipelines.search_edges" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.walk_on_nodes
+      search_edges()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.search_edges" class="md-nav__link">
+  <a href="#qwgraph.pipelines.search_nodes" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.search_edges
+      search_nodes()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.search_virtual_edges" class="md-nav__link">
+  <a href="#qwgraph.pipelines.search_virtual_edges" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.search_virtual_edges
+      search_virtual_edges()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.search_nodes" class="md-nav__link">
+  <a href="#qwgraph.pipelines.walk_on_edges" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.search_nodes
+      walk_on_edges()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qwgraph.pipelines.walk_on_nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      walk_on_nodes()
     </span>
   </a>
   
@@ -856,45 +865,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.walk_on_edges" class="md-nav__link">
+  <a href="#qwgraph.pipelines" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.walk_on_edges
+      qwgraph.pipelines
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.walk_on_nodes" class="md-nav__link">
+  <a href="#qwgraph.pipelines.search_edges" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.walk_on_nodes
+      search_edges()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.search_edges" class="md-nav__link">
+  <a href="#qwgraph.pipelines.search_nodes" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.search_edges
+      search_nodes()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.search_virtual_edges" class="md-nav__link">
+  <a href="#qwgraph.pipelines.search_virtual_edges" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.search_virtual_edges
+      search_virtual_edges()
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#qwgraph.qwsearch.search_nodes" class="md-nav__link">
+  <a href="#qwgraph.pipelines.walk_on_edges" class="md-nav__link">
     <span class="md-ellipsis">
-      qwgraph.qwsearch.search_nodes
+      walk_on_edges()
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qwgraph.pipelines.walk_on_nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      walk_on_nodes()
     </span>
   </a>
   
@@ -3390,173 +3408,34 @@ Scattering operations are operations around the nodes.</p>
 <h2 id="default-pipelines">Default Pipelines</h2>
 
 
-  <div class="doc doc-object doc-function">
+  <div class="doc doc-object doc-module">
 
-<a id="qwgraph.qwsearch.walk_on_edges"></a>
+<a id="qwgraph.pipelines"></a>
     <div class="doc doc-contents first">
 
-      <p>Create a default pipeline of a QW on edges</p>
 
-<p><strong>Parameters:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Default</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>coin</code></td>
-        <td><code>numpy array</code></td>
-        <td><p>coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.</p></td>
-        <td><em>required</em></td>
-      </tr>
-      <tr>
-        <td><code>scattering</code></td>
-        <td><code>str</code></td>
-        <td><p>"cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.</p></td>
-        <td><em>required</em></td>
-      </tr>
-  </tbody>
-</table>
-<p><strong>Returns:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Type</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>(PipeLine)</code></td>
-      <td><p>The pipeline of a QW on edges.</p></td>
-    </tr>
-  </tbody>
-</table>
-<p><strong>Examples:</strong></p>
-    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">walk_on_edges</span><span class="p">(</span><span class="n">coins</span><span class="o">.</span><span class="n">X</span><span class="p">,</span><span class="s2">&quot;grover&quot;</span><span class="p">)</span>
-<span class="n">COIN</span> <span class="o">-&gt;</span> <span class="n">SCATTERING</span>
-</code></pre></div>
 
-        <details class="quote">
-          <summary>Source code in <code>qwgraph/qwsearch.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">walk_on_edges</span><span class="p">(</span><span class="n">coin</span><span class="p">,</span> <span class="n">scattering</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a default pipeline of a QW on edges</span>
 
-<span class="sd">    Args:</span>
-<span class="sd">        coin (numpy array): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.</span>
-<span class="sd">        scattering (str): &quot;cycle&quot; for a cycle around the node or &quot;grover&quot; for a Grover diffusion around the node.</span>
+  <div class="doc doc-children">
 
-<span class="sd">    Returns:</span>
-<span class="sd">        (PipeLine): The pipeline of a QW on edges.</span>
 
-<span class="sd">    Examples:</span>
-<span class="sd">        &gt;&gt;&gt; walk_on_edges(coins.X,&quot;grover&quot;)</span>
-<span class="sd">        COIN -&gt; SCATTERING</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">EDGE</span><span class="p">)</span>
-    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_coin</span><span class="p">(</span><span class="n">coin</span><span class="p">)</span>
-    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_scattering</span><span class="p">(</span><span class="n">scattering</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">pipeline</span>
-</code></pre></div>
-        </details>
-    </div>
 
-  </div>
+
 
 
 
   <div class="doc doc-object doc-function">
 
-<a id="qwgraph.qwsearch.walk_on_nodes"></a>
-    <div class="doc doc-contents first">
-
-      <p>Create a default pipeline of a QW on nodes</p>
-
-<p><strong>Parameters:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Default</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-        <td><code>scattering</code></td>
-        <td><code>str</code></td>
-        <td><p>"cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.</p></td>
-        <td><em>required</em></td>
-      </tr>
-      <tr>
-        <td><code>coin</code></td>
-        <td><code>numpy array</code></td>
-        <td><p>coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.</p></td>
-        <td><code>array([[0.+0.j, 1.+0.j],
-       [1.+0.j, 0.+0.j]])</code></td>
-      </tr>
-  </tbody>
-</table>
-<p><strong>Returns:</strong></p>
-<table>
-  <thead>
-    <tr>
-      <th>Type</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>(PipeLine)</code></td>
-      <td><p>The pipeline of a QW on edges.</p></td>
-    </tr>
-  </tbody>
-</table>
-<p><strong>Examples:</strong></p>
-    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">walk_on_nodes</span><span class="p">(</span><span class="s2">&quot;grover&quot;</span><span class="p">)</span>
-<span class="n">SCATTERING</span> <span class="o">-&gt;</span> <span class="n">COIN</span>
-</code></pre></div>
-
-        <details class="quote">
-          <summary>Source code in <code>qwgraph/qwsearch.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">walk_on_nodes</span><span class="p">(</span><span class="n">scattering</span><span class="p">,</span> <span class="n">coin</span><span class="o">=</span><span class="n">_X</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a default pipeline of a QW on nodes</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        scattering (str): &quot;cycle&quot; for a cycle around the node or &quot;grover&quot; for a Grover diffusion around the node.</span>
-<span class="sd">        coin (numpy array, optional): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        (PipeLine): The pipeline of a QW on edges.</span>
-
-<span class="sd">    Examples:</span>
-<span class="sd">        &gt;&gt;&gt; walk_on_nodes(&quot;grover&quot;)</span>
-<span class="sd">        SCATTERING -&gt; COIN</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">NODE</span><span class="p">)</span>
-    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_scattering</span><span class="p">(</span><span class="n">scattering</span><span class="p">)</span>
-    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_coin</span><span class="p">(</span><span class="n">coin</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">pipeline</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
 
 
+<h2 id="qwgraph.pipelines.search_edges" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">search_edges</span><span class="p">(</span><span class="n">coin</span><span class="p">,</span> <span class="n">scattering</span><span class="p">,</span> <span class="n">marked</span><span class="p">,</span> <span class="n">oracle</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
-  <div class="doc doc-object doc-function">
 
-<a id="qwgraph.qwsearch.search_edges"></a>
-    <div class="doc doc-contents first">
+</h2>
+
+    <div class="doc doc-contents ">
 
       <p>Create a default pipeline of a QW on edges searching edges</p>
 
@@ -3619,7 +3498,7 @@ Scattering operations are operations around the nodes.</p>
 </code></pre></div>
 
         <details class="quote">
-          <summary>Source code in <code>qwgraph/qwsearch.py</code></summary>
+          <summary>Source code in <code>qwgraph/pipelines.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">search_edges</span><span class="p">(</span><span class="n">coin</span><span class="p">,</span> <span class="n">scattering</span><span class="p">,</span> <span class="n">marked</span><span class="p">,</span> <span class="n">oracle</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a default pipeline of a QW on edges searching edges</span>
 
@@ -3638,7 +3517,7 @@ Scattering operations are operations around the nodes.</p>
 <span class="sd">        UNITARY(Oracle on (0, 1)) -&gt; UNITARY(Oracle on (0, 2)) -&gt; UNITARY(Oracle on (0, 3)) -&gt; UNITARY(Oracle on (0, 4)) -&gt; COIN -&gt; SCATTERING -&gt; PROBA</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">EDGE</span><span class="p">)</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">qws</span><span class="o">.</span><span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">qws</span><span class="o">.</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">EDGE</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">oracle</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">oracle</span> <span class="o">=</span> <span class="o">-</span><span class="n">_X</span>
     <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">marked</span><span class="p">:</span>
@@ -3656,8 +3535,122 @@ Scattering operations are operations around the nodes.</p>
 
   <div class="doc doc-object doc-function">
 
-<a id="qwgraph.qwsearch.search_virtual_edges"></a>
-    <div class="doc doc-contents first">
+
+
+<h2 id="qwgraph.pipelines.search_nodes" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">search_nodes</span><span class="p">(</span><span class="n">scattering</span><span class="p">,</span> <span class="n">marked</span><span class="p">,</span> <span class="n">oracle</span><span class="o">=&lt;</span><span class="n">function</span> <span class="o">&lt;</span><span class="k">lambda</span><span class="o">&gt;</span> <span class="n">at</span> <span class="mh">0x73c303abe4d0</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">coin</span><span class="o">=</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">,</span> <span class="mf">1.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">],</span><span class="p">[</span><span class="mf">1.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">,</span> <span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">]]))</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>Create a default pipeline of a QW on nodes searching nodes</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>scattering</code></td>
+        <td><code>str</code></td>
+        <td><p>"cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>marked</code></td>
+        <td><code>list</code></td>
+        <td><p>the list of marked edges.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>oracle</code></td>
+        <td><code>numpy array</code></td>
+        <td><p>The unitary operator of the oracle (or a function of the degree returning the unitary). If None, then -I will be used.</p></td>
+        <td><code>&lt;function &lt;lambda&gt; at 0x73c303abe4d0&gt;</code></td>
+      </tr>
+      <tr>
+        <td><code>coin</code></td>
+        <td><code>numpy array</code></td>
+        <td><p>coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.</p></td>
+        <td><code>array([[0.+0.j, 1.+0.j],
+       [1.+0.j, 0.+0.j]])</code></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>(PipeLine)</code></td>
+      <td><p>The pipeline of a QW on edges searching edges.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">qw</span> <span class="o">=</span> <span class="n">QWSearch</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">complete_graph</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span> <span class="n">starify</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">search_nodes</span><span class="p">(</span><span class="s2">&quot;grover&quot;</span><span class="p">,</span> <span class="n">qw</span><span class="o">.</span><span class="n">nodes</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">coins</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+<span class="n">UNITARY</span><span class="p">(</span><span class="n">Oracle</span> <span class="n">on</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UNITARY</span><span class="p">(</span><span class="n">Oracle</span> <span class="n">on</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UNITARY</span><span class="p">(</span><span class="n">Oracle</span> <span class="n">on</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UNITARY</span><span class="p">(</span><span class="n">Oracle</span> <span class="n">on</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SCATTERING</span> <span class="o">-&gt;</span> <span class="n">COIN</span> <span class="o">-&gt;</span> <span class="n">PROBA</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>qwgraph/pipelines.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">search_nodes</span><span class="p">(</span><span class="n">scattering</span><span class="p">,</span> <span class="n">marked</span><span class="p">,</span> <span class="n">oracle</span><span class="o">=</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">coin</span><span class="o">=</span><span class="n">_X</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a default pipeline of a QW on nodes searching nodes</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        scattering (str): &quot;cycle&quot; for a cycle around the node or &quot;grover&quot; for a Grover diffusion around the node.</span>
+<span class="sd">        marked (list): the list of marked edges.</span>
+<span class="sd">        oracle (numpy array, optional): The unitary operator of the oracle (or a function of the degree returning the unitary). If None, then -I will be used.</span>
+<span class="sd">        coin (numpy array, optional): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (PipeLine): The pipeline of a QW on edges searching edges.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; qw = QWSearch(nx.complete_graph(100), starify=True)</span>
+<span class="sd">        &gt;&gt;&gt; search_nodes(&quot;grover&quot;, qw.nodes()[0:4], lambda d:-np.eye(d), coins.X)</span>
+<span class="sd">        UNITARY(Oracle on 0) -&gt; UNITARY(Oracle on 1) -&gt; UNITARY(Oracle on 2) -&gt; UNITARY(Oracle on 3) -&gt; SCATTERING -&gt; COIN -&gt; PROBA</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">qws</span><span class="o">.</span><span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">qws</span><span class="o">.</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">NODE</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">marked</span><span class="p">:</span>
+        <span class="n">pipeline</span><span class="o">.</span><span class="n">add_unitary</span><span class="p">([</span><span class="n">m</span><span class="p">],</span> <span class="n">oracle</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Oracle on </span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">pipeline</span> <span class="o">+</span> <span class="n">walk_on_nodes</span><span class="p">(</span><span class="n">scattering</span><span class="p">,</span> <span class="n">coin</span><span class="o">=</span><span class="n">coin</span><span class="p">)</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_proba</span><span class="p">(</span><span class="n">marked</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pipeline</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="qwgraph.pipelines.search_virtual_edges" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">search_virtual_edges</span><span class="p">(</span><span class="n">coin</span><span class="p">,</span> <span class="n">scattering</span><span class="p">,</span> <span class="n">marked</span><span class="p">,</span> <span class="n">oracle</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
 
       <p>Create a default pipeline of a QW on edges searching nodes</p>
 
@@ -3720,7 +3713,7 @@ Scattering operations are operations around the nodes.</p>
 </code></pre></div>
 
         <details class="quote">
-          <summary>Source code in <code>qwgraph/qwsearch.py</code></summary>
+          <summary>Source code in <code>qwgraph/pipelines.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">search_virtual_edges</span><span class="p">(</span><span class="n">coin</span><span class="p">,</span> <span class="n">scattering</span><span class="p">,</span> <span class="n">marked</span><span class="p">,</span> <span class="n">oracle</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a default pipeline of a QW on edges searching nodes</span>
 
@@ -3739,7 +3732,7 @@ Scattering operations are operations around the nodes.</p>
 <span class="sd">        UNITARY(Oracle on 0) -&gt; UNITARY(Oracle on 1) -&gt; UNITARY(Oracle on 2) -&gt; UNITARY(Oracle on 3) -&gt; COIN -&gt; SCATTERING -&gt; PROBA</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">VIRTUAL_EDGE</span><span class="p">)</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">qws</span><span class="o">.</span><span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">qws</span><span class="o">.</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">VIRTUAL_EDGE</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">oracle</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">oracle</span> <span class="o">=</span> <span class="o">-</span><span class="n">_X</span>
     <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">marked</span><span class="p">:</span>
@@ -3757,10 +3750,105 @@ Scattering operations are operations around the nodes.</p>
 
   <div class="doc doc-object doc-function">
 
-<a id="qwgraph.qwsearch.search_nodes"></a>
-    <div class="doc doc-contents first">
 
-      <p>Create a default pipeline of a QW on nodes searching nodes</p>
+
+<h2 id="qwgraph.pipelines.walk_on_edges" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">walk_on_edges</span><span class="p">(</span><span class="n">coin</span><span class="p">,</span> <span class="n">scattering</span><span class="p">)</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>Create a default pipeline of a QW on edges</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>coin</code></td>
+        <td><code>numpy array</code></td>
+        <td><p>coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>scattering</code></td>
+        <td><code>str</code></td>
+        <td><p>"cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>(PipeLine)</code></td>
+      <td><p>The pipeline of a QW on edges.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">walk_on_edges</span><span class="p">(</span><span class="n">coins</span><span class="o">.</span><span class="n">X</span><span class="p">,</span><span class="s2">&quot;grover&quot;</span><span class="p">)</span>
+<span class="n">COIN</span> <span class="o">-&gt;</span> <span class="n">SCATTERING</span>
+</code></pre></div>
+
+        <details class="quote">
+          <summary>Source code in <code>qwgraph/pipelines.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">walk_on_edges</span><span class="p">(</span><span class="n">coin</span><span class="p">,</span> <span class="n">scattering</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a default pipeline of a QW on edges</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        coin (numpy array): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.</span>
+<span class="sd">        scattering (str): &quot;cycle&quot; for a cycle around the node or &quot;grover&quot; for a Grover diffusion around the node.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (PipeLine): The pipeline of a QW on edges.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; walk_on_edges(coins.X,&quot;grover&quot;)</span>
+<span class="sd">        COIN -&gt; SCATTERING</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">qws</span><span class="o">.</span><span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">qws</span><span class="o">.</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">EDGE</span><span class="p">)</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_coin</span><span class="p">(</span><span class="n">coin</span><span class="p">)</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_scattering</span><span class="p">(</span><span class="n">scattering</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pipeline</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="qwgraph.pipelines.walk_on_nodes" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">walk_on_nodes</span><span class="p">(</span><span class="n">scattering</span><span class="p">,</span> <span class="n">coin</span><span class="o">=</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">,</span> <span class="mf">1.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">],</span><span class="p">[</span><span class="mf">1.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">,</span> <span class="mf">0.</span><span class="o">+</span><span class="mf">0.</span><span class="n">j</span><span class="p">]]))</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>Create a default pipeline of a QW on nodes</p>
 
 <p><strong>Parameters:</strong></p>
 <table>
@@ -3778,18 +3866,6 @@ Scattering operations are operations around the nodes.</p>
         <td><code>str</code></td>
         <td><p>"cycle" for a cycle around the node or "grover" for a Grover diffusion around the node.</p></td>
         <td><em>required</em></td>
-      </tr>
-      <tr>
-        <td><code>marked</code></td>
-        <td><code>list</code></td>
-        <td><p>the list of marked edges.</p></td>
-        <td><em>required</em></td>
-      </tr>
-      <tr>
-        <td><code>oracle</code></td>
-        <td><code>numpy array</code></td>
-        <td><p>The unitary operator of the oracle (or a function of the degree returning the unitary). If None, then -I will be used.</p></td>
-        <td><code>&lt;function &lt;lambda&gt; at 0x766fbf29a8c0&gt;</code></td>
       </tr>
       <tr>
         <td><code>coin</code></td>
@@ -3811,44 +3887,49 @@ Scattering operations are operations around the nodes.</p>
   <tbody>
     <tr>
       <td><code>(PipeLine)</code></td>
-      <td><p>The pipeline of a QW on edges searching edges.</p></td>
+      <td><p>The pipeline of a QW on edges.</p></td>
     </tr>
   </tbody>
 </table>
 <p><strong>Examples:</strong></p>
-    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">qw</span> <span class="o">=</span> <span class="n">QWSearch</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">complete_graph</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span> <span class="n">starify</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">search_nodes</span><span class="p">(</span><span class="s2">&quot;grover&quot;</span><span class="p">,</span> <span class="n">qw</span><span class="o">.</span><span class="n">nodes</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">coins</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
-<span class="n">UNITARY</span><span class="p">(</span><span class="n">Oracle</span> <span class="n">on</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UNITARY</span><span class="p">(</span><span class="n">Oracle</span> <span class="n">on</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UNITARY</span><span class="p">(</span><span class="n">Oracle</span> <span class="n">on</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UNITARY</span><span class="p">(</span><span class="n">Oracle</span> <span class="n">on</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SCATTERING</span> <span class="o">-&gt;</span> <span class="n">COIN</span> <span class="o">-&gt;</span> <span class="n">PROBA</span>
+    <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">walk_on_nodes</span><span class="p">(</span><span class="s2">&quot;grover&quot;</span><span class="p">)</span>
+<span class="n">SCATTERING</span> <span class="o">-&gt;</span> <span class="n">COIN</span>
 </code></pre></div>
 
         <details class="quote">
-          <summary>Source code in <code>qwgraph/qwsearch.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">search_nodes</span><span class="p">(</span><span class="n">scattering</span><span class="p">,</span> <span class="n">marked</span><span class="p">,</span> <span class="n">oracle</span><span class="o">=</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">coin</span><span class="o">=</span><span class="n">_X</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a default pipeline of a QW on nodes searching nodes</span>
+          <summary>Source code in <code>qwgraph/pipelines.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">walk_on_nodes</span><span class="p">(</span><span class="n">scattering</span><span class="p">,</span> <span class="n">coin</span><span class="o">=</span><span class="n">_X</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a default pipeline of a QW on nodes</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        scattering (str): &quot;cycle&quot; for a cycle around the node or &quot;grover&quot; for a Grover diffusion around the node.</span>
-<span class="sd">        marked (list): the list of marked edges.</span>
-<span class="sd">        oracle (numpy array, optional): The unitary operator of the oracle (or a function of the degree returning the unitary). If None, then -I will be used.</span>
 <span class="sd">        coin (numpy array, optional): coin (np.array or dict): The two by two matrix of the coin. Can alternatively be a dictionnary {edge : coin} for a coin dependent of the edge.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        (PipeLine): The pipeline of a QW on edges searching edges.</span>
+<span class="sd">        (PipeLine): The pipeline of a QW on edges.</span>
 
 <span class="sd">    Examples:</span>
-<span class="sd">        &gt;&gt;&gt; qw = QWSearch(nx.complete_graph(100), starify=True)</span>
-<span class="sd">        &gt;&gt;&gt; search_nodes(&quot;grover&quot;, qw.nodes()[0:4], lambda d:-np.eye(d), coins.X)</span>
-<span class="sd">        UNITARY(Oracle on 0) -&gt; UNITARY(Oracle on 1) -&gt; UNITARY(Oracle on 2) -&gt; UNITARY(Oracle on 3) -&gt; SCATTERING -&gt; COIN -&gt; PROBA</span>
+<span class="sd">        &gt;&gt;&gt; walk_on_nodes(&quot;grover&quot;)</span>
+<span class="sd">        SCATTERING -&gt; COIN</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">NODE</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">marked</span><span class="p">:</span>
-        <span class="n">pipeline</span><span class="o">.</span><span class="n">add_unitary</span><span class="p">([</span><span class="n">m</span><span class="p">],</span> <span class="n">oracle</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Oracle on </span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">pipeline</span> <span class="o">+</span> <span class="n">walk_on_nodes</span><span class="p">(</span><span class="n">scattering</span><span class="p">,</span> <span class="n">coin</span><span class="o">=</span><span class="n">coin</span><span class="p">)</span>
-    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_proba</span><span class="p">(</span><span class="n">marked</span><span class="p">)</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">qws</span><span class="o">.</span><span class="n">PipeLine</span><span class="p">(</span><span class="n">addressing_type</span><span class="o">=</span><span class="n">qws</span><span class="o">.</span><span class="n">AddressingType</span><span class="o">.</span><span class="n">NODE</span><span class="p">)</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_scattering</span><span class="p">(</span><span class="n">scattering</span><span class="p">)</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">add_coin</span><span class="p">(</span><span class="n">coin</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">pipeline</span>
 </code></pre></div>
         </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
     </div>
 
   </div>
