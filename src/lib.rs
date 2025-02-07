@@ -78,19 +78,23 @@ impl Clone for Coin {
     }
 }
 impl Coin {
-    fn apply(&self, e : usize, state : &mut Vec<Cplx>) {
+    fn apply(&self, e : usize, state : &mut Vec<Cplx>, wiring : &Vec<i32>) {
         if self.is_macro {
             for i in 0..e {
-                let (u1,u2) = (state[2*i],state[2*i+1]);
-                state[2*i] = self.coin[0][0]*u1 + self.coin[0][1]*u2;
-                state[2*i+1] = self.coin[1][0]*u1 + self.coin[1][1]*u2;
+                if wiring[2*i] > 0 {
+                    let (u1,u2) = (state[2*i],state[2*i+1]);
+                    state[2*i] = self.coin[0][0]*u1 + self.coin[0][1]*u2;
+                    state[2*i+1] = self.coin[1][0]*u1 + self.coin[1][1]*u2;
+                }
             }
         }
         else {
             for i in 0..e {
-                let (u1,u2) = (state[2*i],state[2*i+1]);
-                state[2*i] = self.coins[i][0][0]*u1 + self.coins[i][0][1]*u2;
-                state[2*i+1] = self.coins[i][1][0]*u1 + self.coins[i][1][1]*u2;
+                if wiring[2*i] > 0 {
+                    let (u1,u2) = (state[2*i],state[2*i+1]);
+                    state[2*i] = self.coins[i][0][0]*u1 + self.coins[i][0][1]*u2;
+                    state[2*i+1] = self.coins[i][1][0]*u1 + self.coins[i][1][1]*u2;
+                }
             }
         }
         
