@@ -19,8 +19,4 @@ In order to specify the underlying graph of the QW, the use of networkx is requi
 		merge_init_into_class: true
 
 ## Default Pipelines
-::: qwgraph.walk_on_edges
-::: qwgraph.walk_on_nodes
-::: qwgraph.search_edges
-::: qwgraph.search_virtual_edges
-::: qwgraph.search_nodes
+::: qwgraph.pipelines
