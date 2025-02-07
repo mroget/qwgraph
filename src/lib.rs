@@ -29,11 +29,13 @@ fn dot(a : &Vec<Vec<Cplx>>, b : &Vec<Cplx>) -> Vec<Cplx> {
     c
 }
 
-fn get_indices_around_nodes(e : usize, n : usize, wiring : &Vec<usize>) -> Vec<Vec<usize>> {
+fn get_indices_around_nodes(e : usize, n : usize, wiring : &Vec<i32>) -> Vec<Vec<usize>> {
     let mut nodes : Vec<Vec<usize>> =  Vec::new();
     for _i in 0..n {nodes.push(Vec::new());}
     for i in 0..(2*e) {
-        nodes[wiring[i]].push(i);
+        if wiring[i]>=0 {
+            nodes[wiring[i] as usize].push(i);
+        }
     }
     for i in 0..n {
         nodes[i].sort_by(|a, b| wiring[neighbor!(a)].partial_cmp(&wiring[neighbor!(b)]).unwrap());
@@ -42,12 +44,12 @@ fn get_indices_around_nodes(e : usize, n : usize, wiring : &Vec<usize>) -> Vec<V
 }
 
 #[pyfunction]
-fn _get_indices_around_nodes(e : usize, n : usize, wiring : Vec<usize>) -> PyResult<Vec<Vec<usize>>> {
+fn _get_indices_around_nodes(e : usize, n : usize, wiring : Vec<i32>) -> PyResult<Vec<Vec<usize>>> {
     Ok(get_indices_around_nodes(e, n, &wiring))
 }
 
 
-fn get_perm(e : usize, n : usize, wiring : &Vec<usize>) -> Vec<usize> {
+fn get_perm(e : usize, n : usize, wiring : &Vec<i32>) -> Vec<usize> {
     let nodes = get_indices_around_nodes(e, n, wiring);
     let mut perm = vec![0; 2*e];
     for i in 0..n {
@@ -182,7 +184,7 @@ impl Scattering {
         }
     }
 
-    fn apply_fct(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+    fn apply_fct(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<i32>) {
         let nodes = get_indices_around_nodes(e, n, wiring);
         for i in 0..n {
             if self.r#type == 2 {
@@ -194,22 +196,26 @@ impl Scattering {
         }
     }
 
-    fn apply_grover(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+    fn apply_grover(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<i32>) {
         let mut mu : Vec<Cplx> = vec![Cplx::new(0.,0.);n];
         let mut size : Vec<usize> = vec![0;n];
         for i in 0..(2*e) {
-            mu[wiring[i]] += state[i];
-            size[wiring[i]] += 1;
+            if wiring[i] > 0 {
+                mu[wiring[i] as usize] += state[i];
+                size[wiring[i] as usize] += 1;
+            }
         }
         for i in 0..mu.len() {
             mu[i] = mu[i]/(size[i] as f64);
         }
         for i in 0..(2*e) {
-            state[i] = 2.*mu[wiring[i]] - state[i];
+            if wiring[i] > 0 {
+                state[i] = 2.*mu[wiring[i] as usize] - state[i];
+            }
         }
     }
 
-    fn apply_perm(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+    fn apply_perm(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<i32>) {
         let perm = get_perm(e,n,wiring);
 
         // apply the permutation
@@ -219,7 +225,7 @@ impl Scattering {
         }
     }
 
-    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<i32>) {
         match self.r#type {
             0 => {self.apply_perm(e, n, state, wiring);},
             1 => {self.apply_grover(e, n, state, wiring);},
@@ -259,7 +265,7 @@ enum Operation {
     Nothing,
 }
 impl Operation {
-    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<i32>) {
         match self {
             Operation::Scattering(s) => {s.apply(e, n, state, wiring)},
             Operation::Coin(c) => {c.apply(e,state)},
@@ -277,7 +283,7 @@ struct OperationWrapper {
     op : Operation,
 }
 impl OperationWrapper {
-    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<usize>) {
+    fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<i32>) {
         self.op.apply(e, n, state, wiring);
     }
 }
@@ -319,7 +325,7 @@ struct QWFast {
     #[pyo3(get, set)]
     state: Vec<Cplx>,
     #[pyo3(get, set)]
-    wiring: Vec<usize>,
+    wiring: Vec<i32>,
     #[pyo3(get, set)]
     n : usize,
     #[pyo3(get, set)]
@@ -358,7 +364,7 @@ impl QWFast {
 #[pymethods]
 impl QWFast {
     #[new]
-    fn new(wiring : Vec<usize>, n : usize, e : usize) -> Self {
+    fn new(wiring : Vec<i32>, n : usize, e : usize) -> Self {
         let mut ret = QWFast {wiring : wiring.clone(), 
                                 n : n,
                                 e : e,
