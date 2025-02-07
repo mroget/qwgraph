@@ -19,8 +19,6 @@ from itertools import chain
 from qwgraph import qwgraph as qwfast
 
 
-_X = np.array([[0,1],[1,0]],dtype=complex)
-
 class AddressingType(Enum):
     """ Adressing types used for the QWSearch.
     In order to mark amplitudes for an oracle, or measure the probability to be somewhere and other similar applications,

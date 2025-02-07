@@ -1,5 +1,7 @@
 from qwgraph import qwsearch as qws
+import numpy as np
 
+_X = np.array([[0,1],[1,0]],dtype=complex)
 
 def walk_on_edges(coin, scattering):
     """ Create a default pipeline of a QW on edges
