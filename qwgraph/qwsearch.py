@@ -14,7 +14,7 @@ from tqdm import tqdm
 import pandas as pd
 import warnings
 from enum import Enum
-import sys
+from itertools import chain
 
 from qwgraph import qwgraph as qwfast
 
@@ -105,12 +105,12 @@ class PipeLine(list):
             return op
 
         if dic["instruction"] == Instruction.PROBA:
-            pos = np.reshape([qw._get_index(i, dic["addressing_type"]) for i in dic["targets"]], (-1,))
+            pos = list(chain.from_iterable([qw._get_index(i, dic["addressing_type"]) for i in dic["targets"]]))
             op.set_to_proba(pos)
             return op
 
         if dic["instruction"] == Instruction.UNITARY:
-            pos = np.reshape([qw._get_index(i, dic["addressing_type"]) for i in dic["targets"]], (-1,))
+            pos = list(chain.from_iterable([qw._get_index(i, dic["addressing_type"]) for i in dic["targets"]]))
             U = dic["unitary"]
             if type(U) == type(lambda x:x):
                 U = U(len(pos))
