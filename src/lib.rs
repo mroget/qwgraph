@@ -272,7 +272,7 @@ impl Operation {
     fn apply(&self, e : usize, n : usize, state : &mut Vec<Cplx>, wiring : &Vec<i32>) {
         match self {
             Operation::Scattering(s) => {s.apply(e, n, state, wiring)},
-            Operation::Coin(c) => {c.apply(e,state)},
+            Operation::Coin(c) => {c.apply(e,state,wiring)},
             Operation::Apply(u) => {u.apply(state)},
             Operation::Proba(_) => {},
             Operation::Nothing => {},
