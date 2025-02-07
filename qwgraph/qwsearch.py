@@ -295,8 +295,9 @@ class QWSearch:
     ######################
     ### Init functions ###
     ######################
-    def __init__(self, graph, starify=False):
+    def __init__(self, graph, starify=False, uniq_self_loops=False):
         self._starified = starify
+        self.uniq_self_loops = uniq_self_loops
         
         self._G = nx.Graph()
         edges = list(graph.edges())
@@ -341,7 +342,7 @@ class QWSearch:
             else:
                 wiring.append(self._nodes_index[j])
                 wiring.append(self._nodes_index[i])
-            if i==j:
+            if i==j and self.uniq_self_loops:
                 wiring[-1] = -1
             self._amplitude_labels[k] = "$\psi_{"+edge_label+"}^-$"
             self._amplitude_labels[k+1] = "$\psi_{"+edge_label+"}^+$"
@@ -460,16 +461,17 @@ class QWSearch:
     #############################
 
     def _get_index(self, pos, _type=AddressingType.EDGE):
+        ret = []
         if _type == AddressingType.EDGE:
             index = self._index[pos]
-            return [2*index, 2*index+1]
+            ret = [2*index, 2*index+1]
         if _type == AddressingType.VIRTUAL_EDGE:
             #assert(self._search_nodes and pos in self._virtual_edges.keys())
             edge = self._virtual_edges[pos]
             index = self._index[edge]
-            return [2*index, 2*index+1]
+            ret = [2*index, 2*index+1]
         if _type == AddressingType.NODE:
-            return deepcopy(self._around_nodes_indices[self._nodes_index[pos]])
+            ret = deepcopy(self._around_nodes_indices[self._nodes_index[pos]])
         if _type == AddressingType.AMPLITUDE:
             (u,v) = pos
             if (u,v) in self._index:
@@ -477,7 +479,11 @@ class QWSearch:
             else:
                 edge = (v,u)
             index = self._index[edge]
-            return [2*index] if self._polarity[pos]=="-" else [2*index+1]
+            ret = [2*index] if self._polarity[pos]=="-" else [2*index+1]
+
+        if self.uniq_self_loops:
+            ret = [i for i in ret if self.qwfast.wiring[i]>=0]
+        return ret
 
 
 
