@@ -140,7 +140,7 @@ class PipeLine(list):
                 for i in qw._degrees:
                     data[i] = dic["scattering"](i)
 
-                Scatter.set_type(3, data)
+                Scatter.set_type(2, data)
 
             else:
                 raise "Wrong argument for the scattering"
