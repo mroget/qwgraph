@@ -81,7 +81,7 @@ impl Coin {
     fn apply(&self, e : usize, state : &mut Vec<Cplx>, wiring : &Vec<i32>) {
         if self.is_macro {
             for i in 0..e {
-                if wiring[2*i] > 0 {
+                if wiring[2*i+1] >= 0 {
                     let (u1,u2) = (state[2*i],state[2*i+1]);
                     state[2*i] = self.coin[0][0]*u1 + self.coin[0][1]*u2;
                     state[2*i+1] = self.coin[1][0]*u1 + self.coin[1][1]*u2;
@@ -90,7 +90,7 @@ impl Coin {
         }
         else {
             for i in 0..e {
-                if wiring[2*i] > 0 {
+                if wiring[2*i+1] >= 0 {
                     let (u1,u2) = (state[2*i],state[2*i+1]);
                     state[2*i] = self.coins[i][0][0]*u1 + self.coins[i][0][1]*u2;
                     state[2*i+1] = self.coins[i][1][0]*u1 + self.coins[i][1][1]*u2;
@@ -204,7 +204,7 @@ impl Scattering {
         let mut mu : Vec<Cplx> = vec![Cplx::new(0.,0.);n];
         let mut size : Vec<usize> = vec![0;n];
         for i in 0..(2*e) {
-            if wiring[i] > 0 {
+            if wiring[i] >= 0 {
                 mu[wiring[i] as usize] += state[i];
                 size[wiring[i] as usize] += 1;
             }
@@ -213,7 +213,7 @@ impl Scattering {
             mu[i] = mu[i]/(size[i] as f64);
         }
         for i in 0..(2*e) {
-            if wiring[i] > 0 {
+            if wiring[i] >= 0 {
                 state[i] = 2.*mu[wiring[i] as usize] - state[i];
             }
         }

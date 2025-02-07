@@ -301,7 +301,6 @@ class QWSearch:
         
         self._G = nx.Graph()
         edges = list(graph.edges())
-        edges = [(u,v) for (u,v) in edges if u!=v]
         self._G.add_edges_from(edges)
         
         if self._starified:
@@ -482,7 +481,7 @@ class QWSearch:
             ret = [2*index] if self._polarity[pos]=="-" else [2*index+1]
 
         if self.uniq_self_loops:
-            ret = [i for i in ret if self.qwfast.wiring[i]>=0]
+            ret = [i for i in ret if self._qwf.wiring[i]>=0]
         return ret
 
 
