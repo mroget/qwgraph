@@ -341,6 +341,8 @@ class QWSearch:
             else:
                 wiring.append(self._nodes_index[j])
                 wiring.append(self._nodes_index[i])
+            if i==j:
+                wiring[-1] = -1
             self._amplitude_labels[k] = "$\psi_{"+edge_label+"}^-$"
             self._amplitude_labels[k+1] = "$\psi_{"+edge_label+"}^+$"
             k+=2
