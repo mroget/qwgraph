@@ -290,6 +290,7 @@ class QWSearch:
     Args:
         graph (networkx.Graph): The graph on which the QW will be defined. Alternatively, graph can be a DiGraph. In that case, the polarity will follow the orientation of the edges. Self loops are ignored.
         starify (bool, optional): If True, the graph will be starified. 
+        uniq_self_loops (bool, optional): If True, self loops will have only one amplitude and ignore coin operations.
     """
 
     ######################
