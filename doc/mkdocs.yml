@@ -4,6 +4,7 @@ nav:
   - Home: 'index.md'
   - QWSearch: 'qwsearch.md'
   - Coins: 'coins.md'
+  - Demo: 'demo.md'
 
 theme:
   name: material
