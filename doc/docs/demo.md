@@ -46,7 +46,7 @@ G = nx.complete_graph(4)
 nx.draw(G,with_labels=True)
 ```
 
-![png](images/output_3_0.png)
+> ![png](images/output_3_0.png)
 
 ```python
 # We create the associated QW
@@ -56,12 +56,14 @@ qw = QWSearch(G)
 qw.state(qw.edges())
 ```
 
-    {(0, 1): array([0.28867513+0.j, 0.28867513+0.j]),
-     (0, 2): array([0.28867513+0.j, 0.28867513+0.j]),
-     (0, 3): array([0.28867513+0.j, 0.28867513+0.j]),
-     (1, 2): array([0.28867513+0.j, 0.28867513+0.j]),
-     (1, 3): array([0.28867513+0.j, 0.28867513+0.j]),
-     (2, 3): array([0.28867513+0.j, 0.28867513+0.j])}
+> ```
+>    {(0, 1): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (0, 2): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (0, 3): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (1, 2): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (1, 3): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (2, 3): array([0.28867513+0.j, 0.28867513+0.j])}
+> ```
 
 ```python
 # The state of the QW can be modified using a dictionnary
@@ -74,12 +76,14 @@ qw.set_state(state)
 qw.state(qw.edges())
 ```
 
-    {(0, 1): array([0.36514837+0.j        , 0.        +0.18257419j]),
-     (0, 2): array([0.36514837+0.j        , 0.        +0.18257419j]),
-     (0, 3): array([0.36514837+0.j        , 0.        +0.18257419j]),
-     (1, 2): array([0.36514837+0.j        , 0.        +0.18257419j]),
-     (1, 3): array([0.36514837+0.j        , 0.        +0.18257419j]),
-     (2, 3): array([0.36514837+0.j        , 0.        +0.18257419j])}
+> ```
+>    {(0, 1): array([0.36514837+0.j        , 0.        +0.18257419j]),
+>     (0, 2): array([0.36514837+0.j        , 0.        +0.18257419j]),
+>     (0, 3): array([0.36514837+0.j        , 0.        +0.18257419j]),
+>     (1, 2): array([0.36514837+0.j        , 0.        +0.18257419j]),
+>     (1, 3): array([0.36514837+0.j        , 0.        +0.18257419j]),
+>     (2, 3): array([0.36514837+0.j        , 0.        +0.18257419j])}
+> ```
 
 ```python
 # It is possible to reset the state to a diagonal one with reset
@@ -87,12 +91,14 @@ qw.reset()
 qw.state(qw.edges())
 ```
 
-    {(0, 1): array([0.28867513+0.j, 0.28867513+0.j]),
-     (0, 2): array([0.28867513+0.j, 0.28867513+0.j]),
-     (0, 3): array([0.28867513+0.j, 0.28867513+0.j]),
-     (1, 2): array([0.28867513+0.j, 0.28867513+0.j]),
-     (1, 3): array([0.28867513+0.j, 0.28867513+0.j]),
-     (2, 3): array([0.28867513+0.j, 0.28867513+0.j])}
+> ```
+>    {(0, 1): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (0, 2): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (0, 3): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (1, 2): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (1, 3): array([0.28867513+0.j, 0.28867513+0.j]),
+>     (2, 3): array([0.28867513+0.j, 0.28867513+0.j])}
+> ```
 
 ```python
 # By entering specific edges, nodes or amplitudes, one can access those states only
@@ -103,14 +109,16 @@ print()
 print("Two amplitudes\n", qw.state([(0,1), (1,0)], _type=AddressingType.AMPLITUDE))
 ```
 
-    First two edges:
-     {(0, 1): array([0.28867513+0.j, 0.28867513+0.j])}
-    
-    First node
-     {0: array([0.28867513+0.j, 0.28867513+0.j, 0.28867513+0.j])}
-    
-    Two amplitudes
-     {(0, 1): array([0.28867513+0.j]), (1, 0): array([0.28867513+0.j])}
+> ```
+>    First two edges:
+>     {(0, 1): array([0.28867513+0.j, 0.28867513+0.j])}
+>    
+>    First node
+>     {0: array([0.28867513+0.j, 0.28867513+0.j, 0.28867513+0.j])}
+>    
+>    Two amplitudes
+>     {(0, 1): array([0.28867513+0.j]), (1, 0): array([0.28867513+0.j])}
+> ```
 
 ```python
 # Same with the label, the polarity or the proba
@@ -121,14 +129,16 @@ print()
 print("Two amplitudes\n", qw.label([(0,1), (1,0)], _type=AddressingType.AMPLITUDE))
 ```
 
-    First two edges:
-     {(0, 1): ['$\\psi_{0,1}^-$', '$\\psi_{0,1}^+$']}
-    
-    First node
-     {0: ['$\\psi_{0,1}^-$', '$\\psi_{0,2}^-$', '$\\psi_{0,3}^-$']}
-    
-    Two amplitudes
-     {(0, 1): ['$\\psi_{0,1}^-$'], (1, 0): ['$\\psi_{0,1}^+$']}
+> ```
+>    First two edges:
+>     {(0, 1): ['$\\psi_{0,1}^-$', '$\\psi_{0,1}^+$']}
+>    
+>    First node
+>     {0: ['$\\psi_{0,1}^-$', '$\\psi_{0,2}^-$', '$\\psi_{0,3}^-$']}
+>    
+>    Two amplitudes
+>     {(0, 1): ['$\\psi_{0,1}^-$'], (1, 0): ['$\\psi_{0,1}^+$']}
+> ```
 
 ## 2. Example 1 : Searching an edge in the hypercube
 
@@ -152,18 +162,14 @@ plt.xlabel("steps")
 plt.ylabel("proba")
 ```
 
-    4096 nodes and 24576 edges
-    Pipeline: UNITARY(Oracle on ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))) -> COIN -> SCATTERING -> PROBA
-    
-    Hitting time: 137 Proba at hitting time: 0.8300884553657915
-    
-    
-    
-    
-    
-    Text(0, 0.5, 'proba')
+> ```
+>    4096 nodes and 24576 edges
+>    Pipeline: UNITARY(Oracle on ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))) -> COIN -> SCATTERING -> PROBA
+>    
+>    Hitting time: 137 Proba at hitting time: 0.8300884553657915
+> ```
 
-![png](images/output_10_2.png)
+> ![png](images/output_10_2.png)
 
 ## 3. Example 2 : Searching nodes with space-time dependent coin and fourier scattering in a random scale-free graph
 
@@ -208,18 +214,11 @@ plt.xlabel("steps")
 plt.ylabel("proba")
 ```
 
-    500 nodes and 809 edges
-    Searched nodes: [18, 258, 461, 314, 44]
-    
-    
-    
-    Building the pipeline:   0%|          | 0/100 [00:00<?, ?it/s]
-    
-    
-    
-    
-    
-    Text(0, 0.5, 'proba')
+> ```
+>    500 nodes and 809 edges
+>    Searched nodes: [18, 258, 461, 314, 44]
+> ```
+> ![png](images/output_12_3.png)
 
-![png](images/output_12_3.png)
+
 
