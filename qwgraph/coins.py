@@ -25,7 +25,7 @@ def generalized_coin(theta, phi, lbd):
 		(complex numpy array): $U(\\theta,\\phi,\\lambda)$
 	"""
 	return np.array([[np.cos(theta) , -np.exp(1j*lbd)*np.sin(theta)],
-		[np.exp(1j*lbd)*np.sin(theta) , np.exp(1j*(lbd+phi))*np.cos(theta)]],dtype=complex)
+		[np.exp(1j*phi)*np.sin(theta) , np.exp(1j*(lbd+phi))*np.cos(theta)]],dtype=complex)
 
 def phase_shift(phi):
 	""" Phase shift coin
